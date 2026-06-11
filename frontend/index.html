@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Career AI Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <span class="logo-icon">&#9670;</span>
+      <h1>Career AI Agent</h1>
+    </div>
+    <div class="header-actions">
+      <input type="text" class="search-input" id="searchInput" placeholder="Buscar vagas...">
+      <button class="btn-primary" id="btnNovaVaga">Nova Vaga</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="kanban" id="kanban"></div>
+  </main>
+
+  <!-- Modal Nova Vaga -->
+  <div class="modal-overlay hidden" id="modalNovaVaga">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Nova Vaga</h2>
+        <button class="btn-close" id="btnCloseNova">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label for="jobText">Cole a descrição da vaga:</label>
+        <textarea id="jobText" rows="12" placeholder="Cole aqui o texto completo da vaga..."></textarea>
+        <div class="modal-status" id="extractStatus"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="btnCancelNova">Cancelar</button>
+        <button class="btn-primary" id="btnProcessar" disabled>Processar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Confirmar Exclusão -->
+  <div class="modal-overlay hidden" id="modalConfirm">
+    <div class="modal" style="max-width:380px">
+      <div class="modal-header">
+        <h2>Excluir vaga</h2>
+        <button class="btn-close" id="btnCloseConfirm">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:14px;line-height:1.5">Tem certeza que deseja excluir esta vaga?</p>
+      </div>
+      <div class="modal-footer confirm-footer">
+        <button class="btn-secondary btn-eq" id="btnCancelConfirm">Cancelar</button>
+        <button class="btn-danger btn-eq" id="btnConfirmDelete">Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Side Panel Detalhes da Vaga -->
+  <div class="side-overlay hidden" id="sideOverlay"></div>
+  <div class="side-panel hidden" id="modalDetalhes">
+    <div class="side-panel-header">
+      <h2 id="detailTitle">Vaga</h2>
+      <button class="btn-close" id="btnCloseDetail">&times;</button>
+    </div>
+    <div class="side-panel-body" id="detailBody"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

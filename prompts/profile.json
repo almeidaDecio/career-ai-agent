@@ -1,0 +1,86 @@
+{
+"name": "Décio D'Almeida",
+
+"current_role": "Product Designer",
+
+"years_experience": 30,
+
+"design_experience_years": 30,
+
+"product_design_experience_years": 5,
+
+"location": "Brasil",
+
+"english_level": "intermediário",
+
+"summary": "Product Designer com experiência em UX, UI, Discovery, Pesquisa com Usuários, Design Systems e produtos SaaS B2B.",
+
+"hard_skills": [
+"Product Design",
+"UX Design",
+"UI Design",
+"UX Research",
+"User Research",
+"Usability Testing",
+"Discovery",
+"Design Systems",
+"Wireframing",
+"User Flows",
+"Prototyping",
+"Interaction Design",
+"Figma",
+"B2B SaaS",
+"IA aplicada ao Design"
+],
+
+"soft_skills": [
+"Comunicação",
+"Colaboração",
+"Resolução de Problemas",
+"Atenção aos Detalhes",
+"Organização",
+"Facilitação",
+"Trabalho Multidisciplinar",
+"Relacionamento com Stakeholders"
+],
+
+"tools": [
+"Figma",
+"IA Generativa"
+],
+
+"methodologies": [
+"Discovery",
+"User Research",
+"Usability Testing",
+"Design System",
+"Metodologias Ágeis"
+],
+
+"domains": [
+"SaaS",
+"B2B",
+"Agronegócio",
+"Fintech"
+],
+
+"experience": [
+{
+"company": "Softfocus",
+"role": "Product Designer",
+"period": "2021-2026"
+},
+{
+"company": "BMK Indústria Gráfica",
+"role": "Designer / Suporte TI",
+"period": "2011-2020"
+}
+],
+
+"education": [
+"Publicidade e Propaganda",
+"Pós-graduação em História da Arte",
+"Design Thinking",
+"User Experience"
+]
+}

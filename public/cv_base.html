@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Décio D'Almeida — Product Designer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #1c1c1c;
+    --ink-mid: #444;
+    --ink-light: #888;
+    --rule: #d8d4ce;
+    --accent: #1e3a5f;
+    --page: #ffffff;
+  }
+  @media print {
+    @page { size: A4; margin: 12mm 15mm; }
+    html, body { background: #fff !important; color: #1c1c1c !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
+    .page { background: #fff !important; box-shadow: none !important; margin: 0 !important; border: none !important; max-width: 100% !important; width: 100% !important; padding: 0 !important; }
+    .section { margin-bottom: 14px; }
+    .section-title { margin-bottom: 8px; page-break-after: avoid; break-after: avoid; }
+    .summary { font-size: 13px; line-height: 1.65; }
+    .job { margin-bottom: 12px; page-break-inside: avoid; break-inside: avoid; }
+    .bullet-list { gap: 2px; }
+    .bullet-list li { font-size: 12.5px; line-height: 1.5; }
+    .rule { margin: 8px 0; }
+  }
+  body { background: #e8e5e0; font-family: 'DM Sans', system-ui, sans-serif; color: var(--ink); line-height: 1.6; padding: 40px 20px; }
+  .page { background: var(--page); max-width: 720px; margin: 0 auto; padding: 52px 64px; box-shadow: 0 4px 40px rgba(0,0,0,0.10); }
+  .header { padding-bottom: 22px; border-bottom: 2px solid var(--accent); margin-bottom: 28px; }
+  .header-name { font-size: 30px; font-weight: 600; letter-spacing: -0.3px; color: var(--ink); margin-bottom: 4px; }
+  .header-title { font-size: 12px; font-weight: 500; letter-spacing: 2.5px; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+  .contacts { display: flex; flex-wrap: wrap; align-items: center; gap: 0; }
+  .contact-item { font-size: 12.5px; color: var(--ink-mid); text-decoration: none; }
+  .contact-item:hover { color: var(--accent); }
+  .contact-item + .contact-item::before { content: '·'; margin: 0 10px; color: var(--ink-light); font-size: 14px; line-height: 1; }
+  .section { margin-bottom: 26px; }
+  .section:last-child { margin-bottom: 0; }
+  .section-title { font-size: 10px; font-weight: 600; letter-spacing: 2.8px; text-transform: uppercase; color: var(--accent); padding-bottom: 6px; border-bottom: 0.5px solid var(--rule); margin-bottom: 14px; }
+  .summary { font-size: 13.5px; font-weight: 300; color: var(--ink-mid); line-height: 1.75; }
+  .job { margin-bottom: 22px; }
+  .job:last-child { margin-bottom: 0; }
+  .job-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1px; }
+  .job-company { font-size: 15px; font-weight: 600; color: var(--ink); }
+  .job-period { font-size: 11.5px; color: var(--ink-light); white-space: nowrap; }
+  .job-role { font-size: 10.5px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+  .bullet-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+  .bullet-list li { font-size: 13px; color: var(--ink-mid); padding-left: 14px; position: relative; line-height: 1.65; }
+  .bullet-list li::before { content: '–'; position: absolute; left: 0; color: var(--rule); }
+  .job-skills { margin-top: 8px; font-size: 11px; color: var(--ink-light); letter-spacing: 0.2px; }
+  .rule { border: none; border-top: 0.5px solid var(--rule); margin: 18px 0; }
+  .skill-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .skill-tag { background: #f0f2f5; color: var(--ink-mid); font-size: 11.5px; padding: 3px 10px; border-radius: 4px; }
+  .lang-item { font-size: 13px; color: var(--ink-mid); }
+  .lang-item span { color: var(--ink-light); margin-left: 6px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="header">
+    <div class="header-name">Décio D'Almeida</div>
+    <div class="header-title">Product Designer · UX Designer · UI Designer</div>
+    <div class="contacts">
+      <a href="mailto:decio.almeida.1969@gmail.com" class="contact-item">decio.almeida.1969@gmail.com</a>
+      <a href="tel:+5511993763161" class="contact-item">+55 11 99376-3161</a>
+      <a href="https://linkedin.com/in/décio-d-almeida-74186621" class="contact-item">linkedin.com/in/décio-d-almeida</a>
+      <a href="https://portfolio.decio-almeida-1969.workers.dev/" class="contact-item">Portfólio Décio</a>
+    </div>
+  </header>
+
+  <!-- RESUMO -->
+  <section class="section">
+    <div class="section-title">Perfil Profissional</div>
+    <p class="summary">Product Designer com foco na criação de produtos digitais escaláveis, unindo experiência do usuário, estratégia de produto e consistência visual para transformar fluxos complexos em soluções mais intuitivas e eficientes. Trajetória de mais de 30 anos em design, iniciada no design gráfico onde precisão, atenção aos detalhes e responsabilidade sempre foram essenciais — hoje aplicada no desenvolvimento de produtos digitais atuando em discovery, pesquisas, prototipação, design systems e colaboração contínua com stakeholders, times de tecnologia e produto. Experiência na evolução de sistemas e produtos orientados a negócio, equilibrando usabilidade, clareza operacional e qualidade visual em todas as etapas do processo — da estratégia à entrega. Contribuição direta para a conquista de 5 novos clientes no setor financeiro, incluindo Santander e Banco do Brasil.</p>
+  </section>
+
+  <!-- COMPETÊNCIAS -->
+  <section class="section">
+    <div class="section-title">Competências</div>
+    <div class="skill-list">
+      <span class="skill-tag">UX Research</span>
+      <span class="skill-tag">Entrevistas com usuários</span>
+      <span class="skill-tag">Testes de usabilidade</span>
+      <span class="skill-tag">Product Discovery</span>
+      <span class="skill-tag">Interaction Design</span>
+      <span class="skill-tag">User flows</span>
+      <span class="skill-tag">Wireframes</span>
+      <span class="skill-tag">Prototipação de alta fidelidade</span>
+      <span class="skill-tag">Prototyping</span>
+      <span class="skill-tag">Especificações</span>
+      <span class="skill-tag">Documentação de soluções</span>
+      <span class="skill-tag">Figma</span>
+      <span class="skill-tag">Design Systems</span>
+      <span class="skill-tag">Consistência visual</span>
+      <span class="skill-tag">UI Design</span>
+      <span class="skill-tag">Handoff</span>
+      <span class="skill-tag">IA no Design</span>
+      <span class="skill-tag">Colaboração com Produto e Engenharia</span>
+      <span class="skill-tag">Comunicação</span>
+      <span class="skill-tag">Autonomia</span>
+      <span class="skill-tag">Colaboração multidisciplinar</span>
+      <span class="skill-tag">Tomada de decisão</span>
+      <span class="skill-tag">Metodologias ágeis</span>
+      <span class="skill-tag">B2B SaaS</span>
+      <span class="skill-tag">Segmento financeiro</span>
+      <span class="skill-tag">Estratégia</span>
+    </div>
+  </section>
+
+  <!-- EXPERIÊNCIA -->
+  <section class="section">
+    <div class="section-title">Experiência Profissional</div>
+
+    <div class="job">
+      <div class="job-header">
+        <div class="job-company">Softfocus</div>
+        <div class="job-period">jul/2021 – fev/2026</div>
+      </div>
+      <div class="job-role">Product Designer</div>
+      <ul class="bullet-list">
+        <li>5 novos clientes no setor financeiro (Santander, Banco do Brasil) e crescimento de 10x na volumetria processada</li>
+        <li>Mais de 50 novas telas para evolução da plataforma no Figma</li>
+        <li>15+ entrevistas com usuários para novas funcionalidades e refinamento de fluxos</li>
+        <li>Estruturação de 2 fluxos completos de produto: Comprovação Fiscal Analítica e Sensoriamento Remoto</li>
+        <li>Condução de testes de usabilidade e entrevistas com usuários reais</li>
+        <li>Documentação de user flows e contribuição para a evolução do design system</li>
+        <li>Integração de ferramentas de IA ao fluxo de design (ideação, pesquisa, variações)</li>
+      </ul>
+      <div class="job-skills">Figma · Design Systems · Prototyping · UX Research · Discovery · Metodologias Ágeis · IA no Design</div>
+    </div>
+
+    <hr class="rule">
+
+    <div class="job">
+      <div class="job-header">
+        <div class="job-company">BMK Indústria Gráfica</div>
+        <div class="job-period">abr/2011 – set/2020</div>
+      </div>
+      <div class="job-role">Designer / Suporte TI</div>
+      <ul class="bullet-list">
+        <li>Criação e finalização de documentos de segurança de alta complexidade (cheques e boletos)</li>
+        <li>Otimização de fluxos de produção gráfica com redução de falhas e ganho de eficiência</li>
+      </ul>
+      <div class="job-skills">Documentos de Segurança · Pré-impressão · Resolução de problemas · Otimização de Processos</div>
+    </div>
+
+    <hr class="rule">
+
+    <div class="job">
+      <div class="job-header">
+        <div class="job-company">Editora 3 — Revista IstoÉ Dinheiro</div>
+        <div class="job-period">jul/2010 – fev/2011</div>
+      </div>
+      <div class="job-role">Designer / Diagramador / Ilustrador</div>
+      <ul class="bullet-list">
+        <li>Desenvolvimento de layouts editoriais para publicação semanal de circulação nacional</li>
+        <li>Criação de soluções visuais para conteúdos financeiros e econômicos</li>
+      </ul>
+      <div class="job-skills">Diagramação Editorial · Ilustração · Design Gráfico · Identidade Visual · Pré-impressão</div>
+    </div>
+
+    <hr class="rule">
+
+    <div class="job">
+      <div class="job-header">
+        <div class="job-company">Paper Express</div>
+        <div class="job-period">mar/2002 – fev/2009</div>
+      </div>
+      <div class="job-role">Supervisor de Produção</div>
+      <ul class="bullet-list">
+        <li>Gestão de produção gráfica com planejamento operacional e controle de prazos</li>
+        <li>Coordenação de equipes em ambientes de alta demanda</li>
+      </ul>
+      <div class="job-skills">Gestão de Produção · Gestão de Equipes · Design Gráfico · PCP · Otimização de Processos</div>
+    </div>
+
+  </section>
+
+  <!-- FORMAÇÃO -->
+  <section class="section">
+    <div class="section-title">Formação Acadêmica</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 32px">
+      <div>
+        <div style="font-size:13.5px;font-weight:500;color:var(--ink);margin-bottom:1px">Publicidade e Propaganda</div>
+        <div style="font-size:12px;color:var(--ink-mid)">UNIP — Universidade Paulista</div>
+        <div style="font-size:11.5px;color:var(--ink-light)">1988 – 1992</div>
+      </div>
+      <div>
+        <div style="font-size:13.5px;font-weight:500;color:var(--ink);margin-bottom:1px">Pós-Graduação em História da Arte</div>
+        <div style="font-size:12px;color:var(--ink-mid)">FAAP — Fundação Armando Alvares Penteado</div>
+        <div style="font-size:11.5px;color:var(--ink-light)">2013 – 2015</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CERTIFICAÇÕES -->
+  <section class="section">
+    <div class="section-title">Certificações</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:13px;color:var(--ink-mid)">Design Thinking: The Ultimate Guide <span style="font-size:11.5px;color:var(--ink-light);margin-left:6px">IxDF — Interaction Design Foundation · 2023</span></div>
+      <div style="font-size:13px;color:var(--ink-mid)">User Experience: The Beginner's Guide <span style="font-size:11.5px;color:var(--ink-light);margin-left:6px">IxDF — Interaction Design Foundation · 2023</span></div>
+    </div>
+  </section>
+
+  <!-- IDIOMAS -->
+  <section class="section">
+    <div class="section-title">Idiomas</div>
+    <div class="lang-item">Inglês <span>Básico</span></div>
+  </section>
+
+</div>
+<script>
+window.onload = function () {
+  if (window.location.search.includes('print=true')) setTimeout(function () { window.print(); }, 500);
+};
+</script>
+</body>
+</html>

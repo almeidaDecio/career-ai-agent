@@ -1,0 +1,173 @@
+{
+  "name": "Décio D'Almeida",
+  "current_title": "Product Designer | UX Designer | UI Designer",
+  "total_experience_years": 4.7,
+  "summary": "Product Designer com foco na criação de produtos digitais escaláveis, unindo experiência do usuário, estratégia de produto e consistência visual para transformar fluxos complexos em soluções mais intuitivas e eficientes. Trajetória de mais de 30 anos em design, iniciada no design gráfico onde precisão, atenção aos detalhes e responsabilidade sempre foram essenciais — hoje aplicada no desenvolvimento de produtos digitais atuando em discovery, pesquisas, prototipação, design systems e colaboração contínua com stakeholders, times de tecnologia e produto. Experiência na evolução de sistemas e produtos orientados a negócio, equilibrando usabilidade, clareza operacional e qualidade visual em todas as etapas do processo — da estratégia à entrega. Contribuição direta para a conquista de 5 novos clientes no setor financeiro, incluindo Santander e Banco do Brasil.",
+  "categories": {
+    "research": {
+      "skills": [
+        "UX Research",
+        "User Research",
+        "entrevistas com usuários",
+        "testes de usabilidade",
+        "Product Discovery",
+        "Interaction Design"
+      ],
+      "evidence": "Conduzi 15+ entrevistas e testes de usabilidade com usuários reais, traduzindo dados qualitativos em decisões que refinaram fluxos e embasaram novas funcionalidades."
+    },
+    "interaction_design": {
+      "skills": [
+        "user flows",
+        "wireframes",
+        "prototipação de alta fidelidade",
+        "Prototyping",
+        "especificações",
+        "documentação de soluções"
+      ],
+      "evidence": "Estruturei 2 fluxos completos de produto do zero — Comprovação Fiscal Analítica e Sensoriamento Remoto — e documentei user flows e decisões de design de forma clara para times de negócio e engenharia."
+    },
+    "visual_design": {
+      "skills": [
+        "Figma",
+        "Design Systems",
+        "consistência visual",
+        "UI Design",
+        "handoff"
+      ],
+      "evidence": "Projetei mais de 50 novas telas no Figma para módulos críticos do produto e contribuí para a evolução do design system, garantindo consistência entre módulos."
+    },
+    "tools": {
+      "skills": [
+        "IA no Design"
+      ],
+      "evidence": "Integrei ferramentas de IA ao processo de design (ideação, pesquisa, variações) e atuei em sprints ágeis com times multidisciplinares."
+    },
+    "soft_skills": {
+      "skills": [
+        "colaboração com Produto e Engenharia",
+        "comunicação",
+        "autonomia",
+        "colaboração multidisciplinar",
+        "tomada de decisão",
+        "metodologias ágeis"
+      ],
+      "evidence": "Colaborei diretamente com PMs, desenvolvedores e QA em sprints ágeis, garantindo alinhamento entre requisitos de negócio, viabilidade técnica e experiência do usuário."
+    },
+    "business": {
+      "skills": [
+        "B2B SaaS",
+        "segmento financeiro",
+        "estratégia"
+      ],
+      "evidence": "Contribuí para a conquista de 5 novos clientes no setor financeiro (Santander, Banco do Brasil) e crescimento de 10x na volumetria processada."
+    }
+  },
+  "experience": [
+    {
+      "company": "Softfocus",
+      "role": "Product Designer",
+      "period": "jul/2021 – fev/2026",
+      "years": 4.7,
+      "domain": "B2B SaaS",
+      "highlights": [
+        "5 novos clientes no setor financeiro (Santander, Banco do Brasil) e crescimento de 10x na volumetria processada",
+        "Mais de 50 novas telas para evolução da plataforma no Figma",
+        "15+ entrevistas com usuários para novas funcionalidades e refinamento de fluxos",
+        "Estruturação de 2 fluxos completos de produto: Comprovação Fiscal Analítica e Sensoriamento Remoto",
+        "Condução de testes de usabilidade e entrevistas com usuários reais",
+        "Documentação de user flows e contribuição para a evolução do design system",
+        "Integração de ferramentas de IA ao fluxo de design (ideação, pesquisa, variações)"
+      ],
+      "skills": [
+        "Figma",
+        "Design Systems",
+        "Prototipação",
+        "User Research",
+        "Discovery",
+        "Metodologias Ágeis",
+        "IA no Design"
+      ]
+    },
+    {
+      "company": "BMK Indústria Gráfica",
+      "role": "Designer / Suporte TI",
+      "period": "abr/2011 – set/2020",
+      "years": 9,
+      "domain": "Gráfico / Operacional",
+      "highlights": [
+        "Criação e finalização de documentos de segurança de alta complexidade (cheques e boletos)",
+        "Otimização de fluxos de produção gráfica com redução de falhas e ganho de eficiência"
+      ],
+      "skills": [
+        "Documentos de Segurança",
+        "Pré-impressão",
+        "Resolução de problemas",
+        "Otimização de Processos"
+      ]
+    },
+    {
+      "company": "Editora 3 - Revista Istoé Dinheiro",
+      "role": "Design / Diagramador / Ilustrador",
+      "period": "jul/2010 – fev/2011",
+      "years": 0.7,
+      "domain": "Editorial",
+      "highlights": [
+        "Desenvolvimento de layouts editoriais para publicação semanal de circulação nacional",
+        "Criação de soluções visuais para conteúdos financeiros e econômicos"
+      ],
+      "skills": [
+        "Diagramação Editorial",
+        "Ilustração",
+        "Design Gráfico",
+        "Identidade Visual",
+        "Pré-impressão"
+      ]
+    },
+    {
+      "company": "Paper Express",
+      "role": "Supervisor de Produção",
+      "period": "mar/2002 – fev/2009",
+      "years": 7,
+      "domain": "Gráfico / Produção",
+      "highlights": [
+        "Gestão de produção gráfica com planejamento operacional e controle de prazos",
+        "Coordenação de equipes em ambientes de alta demanda"
+      ],
+      "skills": [
+        "Gestão de Produção",
+        "Gestão de Equipes",
+        "Design Gráfico",
+        "PCP",
+        "Otimização de Processos"
+      ]
+    }
+  ],
+  "languages": [
+    {
+      "language": "Inglês",
+      "level": "Básico"
+    }
+  ],
+  "education": [
+    {
+      "degree": "Graduação em Publicidade e Propaganda",
+      "institution": "UNIP",
+      "year": "1992"
+    },
+    {
+      "degree": "Pós-Graduação em História da Arte",
+      "institution": "FAAP",
+      "year": "2015"
+    },
+    {
+      "degree": "Design Thinking: The Ultimate Guide",
+      "institution": "IxDF",
+      "year": "2023"
+    },
+    {
+      "degree": "User Experience: The Beginner's Guide",
+      "institution": "IxDF",
+      "year": "2023"
+    }
+  ]
+}

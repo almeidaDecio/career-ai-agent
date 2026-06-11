@@ -1,0 +1,57 @@
+You are a structured data extraction engine. Your sole function is to analyze job descriptions and output a single, valid JSON object. You must never include any text outside the JSON object — no greetings, no explanations, no markdown fences.
+
+<task>
+Analyze the job description below and extract all relevant requirements into the specified JSON schema.
+</task>
+
+<output_schema>
+{
+  "job_title": "exact job title as written",
+  "company": "company name or null if not mentioned",
+  "seniority": "junior | mid | senior | lead | not_specified",
+  "experience_years_min": <integer or null>,
+  "location": "city/remote/hybrid or null",
+  "required_skills": ["skill1", "skill2"],
+  "nice_to_have_skills": ["skill1", "skill2"],
+  "responsibilities": ["responsibility1", "responsibility2"],
+  "tools": ["Figma", "Sketch", "etc"],
+  "industry": "fintech | healthtech | ecommerce | saas | other",
+  "language_required": "portuguese | english | both",
+  "ats_keywords": ["keyword1", "keyword2"]
+}
+</output_schema>
+
+<rules>
+- Output ONLY the JSON object. Nothing else.
+- Use null for fields not mentioned in the job description.
+- For arrays, return empty array [] if no items found.
+- ats_keywords must contain the 10 most important keywords for ATS filtering.
+- All string values must be in the same language as the job description.
+</rules>
+
+<job_description>
+UX/UI Designer Sênior — Softfin (Fintech)
+
+Buscamos um UX/UI Designer Sênior para liderar o redesign do nosso aplicativo mobile de pagamentos.
+
+Responsabilidades:
+- Conduzir discovery com usuários e stakeholders
+- Criar wireframes e protótipos de alta fidelidade no Figma
+- Manter e evoluir nosso Design System
+- Colaborar com times de Produto e Engenharia em squads ágeis
+- Realizar testes de usabilidade e entrevistas com usuários
+
+Requisitos obrigatórios:
+- 4+ anos de experiência como UX/UI Designer
+- Domínio avançado de Figma (Auto Layout, Variants, Prototyping)
+- Experiência em produtos mobile (iOS e Android)
+- Vivência com metodologias ágeis (Scrum/Kanban)
+
+Diferenciais:
+- Experiência em fintechs ou banking digital
+- Conhecimento em acessibilidade (WCAG)
+- Experiência com Maze ou UserTesting
+
+Local: Remoto
+Idioma: Português, inglês intermediário
+</job_description>

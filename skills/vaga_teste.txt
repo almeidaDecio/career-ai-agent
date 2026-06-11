@@ -1,0 +1,29 @@
+Buscamos talentos
+
+Experiência em ciclos completos de produto, da pesquisa ao handoff, com autonomia e critério para defender decisões; 
+Capacidade de separar o que o usuário pede do que ele precisa, especialmente quando usuário e stakeholder são a mesma pessoa; 
+Além da estética, capacidade de conectar design, produto e negócio para gerar valor, demonstrando o impacto do seu trabalho nas métricas; 
+Uso de IA generativa como ferramenta de trabalho para pesquisar, sintetizar, explorar variações, com julgamento sobre o que revisa antes de usar; 
+Interesse em contribuir com o crescimento do time, compartilhar referências, dar feedbacks e elevar o padrão coletivo; 
+Fluência em metodologias de pesquisa qualitativas e quantitativas; 
+Comunicação verbal e escrita claras e capacidade de apresentar e articular decisões de design com justificativas baseadas no usuário; 
+Capacidade de colaborar e influenciar iniciativas estratégicas em produtos internos, repensando processos de forma ágil e colaborando de perto com CS para escalar soluções de CRM orientadas a impacto; 
+Sólida experiência em design de produtos digitais; 
+Domínio da ferramenta Figma; 
+Capacidade de trabalhar de forma colaborativa com equipes multidisciplinares; 
+Familiaridade com metodologias ágeis e práticas de desenvolvimento iterativo; 
+Graduação em Design ou similares. 
+
+Diferenciais
+
+Experiência com plataformas logísticas, de mobilidade ou SaaS B2B com múltiplos perfis de usuário;
+Experiência com produtos que envolvem dados financeiros, operacionais ou regulatórios;
+Familiaridade com Vibe Coding ou prototipagem em código.
+
+Desafios
+
+Pesquisa e descoberta: Conduzir entrevistas, testes de usabilidade, analisar dados qualitativos e quantitativos e traduzir achados em argumentos que movem decisões de produto;
+Entrevistar analistas, mapear fluxos de trabalho reais e identificar onde o processo quebra. Seu usuário usa a ferramenta centenas de vezes por dia — pequenas fricções têm grande impacto acumulado;
+Método e processo: Trabalhar discovery e entrega com autonomia. Propor faseamentos com trade-offs claros e sustentar a qualidade da experiência ao longo do ciclo;
+Craft e usabilidade: Entregar protótipos de alta fidelidade com escolhas visuais justificadas;
+Estratégia e negócio: Conectar mudanças de design a indicadores de operação como tempo de tarefa, volume por analista, taxa de erro e acompanhar o impacto após o lançamento.

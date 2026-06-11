@@ -1,0 +1,21 @@
+{
+  "name": "career-ai-agent",
+  "version": "1.0.0",
+  "description": "Um ecossistema modular e Local-First de agentes de inteligência artificial e automação projetado para buscar vagas de emprego, extrair requisitos de negócios, otimizar currículos (RAG) e preparar portfólios e cases para entrevistas.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "better-sqlite3": "^12.10.0",
+    "docx-pdf": "^0.0.1",
+    "express": "^5.2.1"
+  }
+}

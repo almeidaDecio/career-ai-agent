@@ -1,0 +1,468 @@
+Ajustar portfolio com novos resultados
+ajustar campso ATS e diferenciais no modal
+deixar botões gerar cv e exportar pdf embaixo do risco 
+entrevista (Whats, Video)
+deixr o botão exportar pdf abaixo da risca do título no modal
+é muito complicado criar um novo campo onde faz um novo match com o novo cv
+nome saída sem espaços
+colocar bullet entre os dados no topo do CV (PDF)
+colocar glassdoor nas opções de plataforma e deixar o campo outro para preenchimento. Toda vez que o campo outro for preenchido colocar o que foi colocado como opção
+deixar o campo local com a opção de selecionar cidade / estado caso ele seja null. Colocar um componente que para procurar a cidade. A cidade já deve trazer o estado.
+se clicar no botão salvar enquanto estiver gerando o cv mostrar uma mensagem
+Nunca deixar UX research e User research um ao lado do outro
+Sempre trocar engenharia por desenvolvimento
+ser possível anexar arquivos
+
+
+
+=========================================================
+ROCK'N PATAS
+REEL 02
+O GATO DAS 3H DA MANHÃ
+=========================================================
+
+Fluxo recomendado
+
+Imagem
+↓
+Vídeo
+↓
+CapCut
+↓
+Instagram (música oficial)
+
+=========================================================
+PERSONAGEM PADRÃO
+=========================================================
+
+Black cat
+
+Short black fur
+
+Green eyes
+
+Small white patch on chest
+
+Black leather collar with silver studs
+
+Black Ray-Ban style sunglasses
+
+Confident rockstar attitude
+
+Vintage microphone
+
+Red electric guitar
+
+Marshall amplifier
+
+Stage smoke
+
+Red and white concert lights
+
+Photorealistic
+
+Hollywood movie quality
+
+35mm lens
+
+Ultra realistic
+
+=========================================================
+CENA 01
+IMAGEM
+=========================================================
+
+Ultra-realistic cinematic photograph.
+
+Inside a modern middle-class apartment at exactly 3:00 AM.
+
+Vertical composition (9:16).
+
+The camera is positioned inside the living room.
+
+A cozy gray sofa.
+
+A TV on a wooden TV stand.
+
+Bookshelves.
+
+Indoor plants.
+
+Warm wooden floor.
+
+A narrow hallway leads to a closed bedroom door.
+
+The bedroom door is barely visible at the end of the hallway.
+
+A digital alarm clock on a side table clearly reads 03:00 AM.
+
+Only soft blue moonlight enters through the windows.
+
+The apartment feels peaceful, lived-in and realistic.
+
+No people.
+
+No animals.
+
+No text.
+
+No watermark.
+
+Photorealistic.
+
+Movie still.
+
+Shot on ARRI Alexa.
+
+35mm lens.
+
+Ultra detailed.
+
+Negative Prompt
+
+hotel
+office
+hospital
+empty corridor
+luxury mansion
+castle
+warehouse
+cartoon
+anime
+cgi
+low quality
+
+=========================================================
+CENA 01
+VÍDEO
+=========================================================
+
+Slow cinematic dolly forward.
+
+Very slow movement.
+
+The camera moves from the living room toward the hallway.
+
+Nothing else moves.
+
+Moonlight.
+
+Quiet atmosphere.
+
+Movie quality.
+
+=========================================================
+CENA 02
+IMAGEM
+=========================================================
+
+Ultra realistic movie still.
+
+A man sleeping peacefully in a modern bedroom.
+
+Moonlight entering through the window.
+
+The digital clock beside the bed reads exactly 03:00 AM.
+
+Natural bedroom.
+
+Modern furniture.
+
+Gray sheets.
+
+Minimalist decoration.
+
+Photorealistic.
+
+35mm.
+
+Hollywood lighting.
+
+No text.
+
+=========================================================
+CENA 02
+VÍDEO
+=========================================================
+
+The man slowly opens his eyes after hearing a strange noise.
+
+He looks confused.
+
+Very slow realistic movement.
+
+Only the head moves.
+
+Natural breathing.
+
+Movie quality.
+
+=========================================================
+CENA 03
+IMAGEM
+=========================================================
+
+Ultra realistic cinematic hallway inside a modern apartment.
+
+The owner stands in the hallway.
+
+At the end of the corridor there is a bedroom door.
+
+A mysterious red light shines underneath the door.
+
+Light concert smoke escapes from below the door.
+
+Photorealistic.
+
+Hollywood movie.
+
+Dark atmosphere.
+
+35mm.
+
+=========================================================
+CENA 03
+VÍDEO
+=========================================================
+
+The owner slowly walks toward the bedroom door.
+
+The red light flickers.
+
+The smoke slowly moves.
+
+Suspense.
+
+Movie quality.
+
+=========================================================
+CENA 04
+IMAGEM
+=========================================================
+
+Ultra realistic cinematic bedroom.
+
+The bedroom door has just opened.
+
+Inside is a black cat.
+
+The cat wears stylish black rock sunglasses.
+
+Next to him is a vintage microphone.
+
+An electric guitar leans against an amplifier.
+
+Red concert lights.
+
+White spotlights.
+
+Light stage smoke.
+
+Luxury concert atmosphere.
+
+Photorealistic.
+
+35mm.
+
+Movie still.
+
+=========================================================
+CENA 04
+VÍDEO
+=========================================================
+
+The bedroom door slowly opens.
+
+The cat slowly turns his head toward the camera.
+
+Stage lights slowly switch on.
+
+Concert smoke moves naturally.
+
+Epic reveal.
+
+Hollywood movie.
+
+=========================================================
+CENA 05
+IMAGEM
+=========================================================
+
+Ultra realistic rock concert.
+
+Black cat.
+
+Black sunglasses.
+
+Standing on a small bedroom stage.
+
+Vintage microphone.
+
+Electric guitar.
+
+Marshall amplifier.
+
+Concert lights.
+
+Stage smoke.
+
+Dark luxury atmosphere.
+
+Photorealistic.
+
+Movie still.
+
+35mm.
+
+=========================================================
+CENA 05
+VÍDEO
+=========================================================
+
+The cat starts singing.
+
+Small head movement.
+
+Tail moves naturally.
+
+Microphone vibrates slightly.
+
+Stage lights flash slowly.
+
+Movie quality.
+
+=========================================================
+CENA 06
+IMAGEM
+=========================================================
+
+Ultra realistic rock concert.
+
+The black cat performs an epic guitar solo.
+
+Electric guitar.
+
+Red spotlights.
+
+Smoke.
+
+Concert atmosphere.
+
+Photorealistic.
+
+Hollywood.
+
+35mm.
+
+=========================================================
+CENA 06
+VÍDEO
+=========================================================
+
+The cat plays guitar.
+
+Slow cinematic camera orbit.
+
+Lights flash.
+
+Smoke moves.
+
+Epic performance.
+
+=========================================================
+CENA 07
+IMAGEM
+=========================================================
+
+Ultra realistic close-up.
+
+The black cat looks directly into the camera.
+
+Confident expression.
+
+Rockstar attitude.
+
+Stage lights behind him.
+
+Smoke.
+
+Dark background.
+
+Movie still.
+
+35mm.
+
+=========================================================
+CENA 07
+VÍDEO
+=========================================================
+
+The cat slowly smiles.
+
+Looks into the camera.
+
+The lights fade.
+
+The smoke disappears.
+
+Epic ending.
+
+=========================================================
+TEXTOS (CAPCUT)
+=========================================================
+
+0s
+
+3 DA MANHÃ...
+
+---------------------------------------
+
+8s
+
+VOCÊ OUVE UM BARULHO...
+
+---------------------------------------
+
+14s
+
+E PENSA...
+
+---------------------------------------
+
+17s
+
+QUE ELE ESTÁ COM MEDO.
+
+---------------------------------------
+
+25s
+
+MAS...
+
+---------------------------------------
+
+27s
+
+ELE ESTÁ EM ENSAIO.
+
+---------------------------------------
+
+Final
+
+🎸 @rock_n_patas
+
+=========================================================
+MÚSICAS SUGERIDAS
+=========================================================
+
+Back In Black — AC/DC
+
+Thunderstruck — AC/DC
+
+We Will Rock You — Queen
+
+Rock And Roll All Nite — KISS
+
+I Love Rock 'N Roll — Joan Jett
+
+=========================================================
