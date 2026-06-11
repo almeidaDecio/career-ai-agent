@@ -11,14 +11,54 @@
 <body>
   <header>
     <div class="logo">
-      <span class="logo-icon">&#9670;</span>
-      <h1>Career AI Agent</h1>
+      <div class="logo-icon">✦</div>
+      <div>
+        <h1>Career AI Agent</h1>
+        <p class="logo-subtitle">Gerencie suas candidaturas</p>
+      </div>
     </div>
     <div class="header-actions">
-      <input type="text" class="search-input" id="searchInput" placeholder="Buscar vagas...">
+      <div class="search-wrap">
+        <input type="text" class="search-input" id="searchInput" placeholder="Buscar vagas...">
+        <button class="search-clear hidden" id="btnClearSearch" title="Limpar busca">&times;</button>
+      </div>
       <button class="btn-primary" id="btnNovaVaga">Nova Vaga</button>
     </div>
   </header>
+
+  <div class="stats-bar" id="statsBar">
+    <div class="stats-bar-item">
+      <div class="stats-bar-icon teal" id="statTotal">0</div>
+      <div>
+        <div class="stats-bar-label">Total</div>
+        <div class="stats-bar-value">Vagas salvas</div>
+      </div>
+    </div>
+    <div class="stats-bar-divider"></div>
+    <div class="stats-bar-item">
+      <div class="stats-bar-icon amber" id="statAplicadas">0</div>
+      <div>
+        <div class="stats-bar-label">Aplicadas</div>
+        <div class="stats-bar-value">Este mês</div>
+      </div>
+    </div>
+    <div class="stats-bar-divider"></div>
+    <div class="stats-bar-item">
+      <div class="stats-bar-icon violet" id="statEntrevistas">0</div>
+      <div>
+        <div class="stats-bar-label">Entrevistas</div>
+        <div class="stats-bar-value">Agendadas</div>
+      </div>
+    </div>
+    <div class="stats-bar-divider"></div>
+    <div class="stats-bar-item">
+      <div class="stats-bar-icon green" id="statMatchMedio">—</div>
+      <div>
+        <div class="stats-bar-label">Taxa</div>
+        <div class="stats-bar-value">Match médio</div>
+      </div>
+    </div>
+  </div>
 
   <main>
     <div class="kanban" id="kanban"></div>
@@ -34,6 +74,14 @@
       <div class="modal-body">
         <label for="jobText">Cole a descrição da vaga:</label>
         <textarea id="jobText" rows="12" placeholder="Cole aqui o texto completo da vaga..."></textarea>
+        <div class="attach-row">
+          <label class="btn-attach" for="jobFileInput">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            Anexar arquivo
+          </label>
+          <input type="file" id="jobFileInput" accept=".pdf,.doc,.docx,.txt" style="display:none">
+          <span class="attach-name" id="attachName"></span>
+        </div>
         <div class="modal-status" id="extractStatus"></div>
       </div>
       <div class="modal-footer">
@@ -60,12 +108,40 @@
     </div>
   </div>
 
+  <!-- Modal Erro -->
+  <div class="modal-overlay hidden" id="modalError">
+    <div class="modal" style="max-width:420px">
+      <div class="modal-header">
+        <h2>Erro</h2>
+        <button class="btn-close" id="btnCloseError">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div style="width:36px;height:36px;border-radius:50%;background:rgba(239,68,68,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--red);font-size:18px">!</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px" id="errorTitle">Algo deu errado</div>
+            <div style="font-size:12px;line-height:1.5;color:var(--text2)" id="errorMessage">Tente novamente.</div>
+            <div style="font-size:11px;margin-top:8px;padding:6px 10px;background:var(--bg);border-radius:6px;color:var(--text2);font-family:monospace;display:none" id="errorContext"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="justify-content:flex-end">
+        <button class="btn-primary" id="btnCloseError" style="padding:8px 24px">Ok</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Side Panel Detalhes da Vaga -->
   <div class="side-overlay hidden" id="sideOverlay"></div>
   <div class="side-panel hidden" id="modalDetalhes">
     <div class="side-panel-header">
-      <h2 id="detailTitle">Vaga</h2>
-      <button class="btn-close" id="btnCloseDetail">&times;</button>
+      <div class="side-panel-header-top">
+        <h2 id="detailTitle">Vaga</h2>
+        <button class="btn-close" id="btnCloseDetail">&times;</button>
+      </div>
+      <hr class="side-panel-rule">
+      <div class="side-panel-header-actions" id="sidePanelActions"></div>
+      <hr class="side-panel-rule">
     </div>
     <div class="side-panel-body" id="detailBody"></div>
   </div>

@@ -6,6 +6,40 @@ const CV_PATH = path.join(__dirname, '..', 'sample_cv.json');
 const OLLAMA_HOST = 'http://127.0.0.1:11434';
 const OLLAMA_MODEL = 'job-analyzer';
 
+function replaceEngineering(text) {
+  return text
+    .replace(/\bEngenharia de Software\b/gi, 'Desenvolvimento de Software')
+    .replace(/\bEngenharia\b/gi, 'Desenvolvimento')
+    .replace(/\bengenharia\b/g, 'desenvolvimento');
+}
+
+function sanitizeSkills(skills) {
+  const normalize = s => s.toLowerCase().replace(/[\s\-_]/g, '');
+  const UX = normalize('UX Research');
+  const USER = normalize('User Research');
+  const result = [];
+  for (let i = 0; i < skills.length; i++) {
+    const curr = normalize(skills[i]);
+    const prev = result.length > 0 ? normalize(result[result.length - 1]) : '';
+    const isUX = curr === UX;
+    const isUser = curr === USER;
+    const prevIsUX = prev === UX;
+    const prevIsUser = prev === USER;
+    if ((isUX && prevIsUser) || (isUser && prevIsUX)) {
+      const separator = skills.slice(i + 1).find(s => {
+        const n = normalize(s); return n !== UX && n !== USER;
+      });
+      if (separator) {
+        result.push(separator);
+        const sepIdx = skills.indexOf(separator, i + 1);
+        if (sepIdx !== -1) skills.splice(sepIdx, 1);
+      }
+    }
+    result.push(skills[i]);
+  }
+  return result;
+}
+
 function loadBaseCV() {
   const raw = fs.readFileSync(CV_PATH, 'utf8');
   return JSON.parse(raw);
@@ -138,7 +172,8 @@ ${softfocusText}
 
   let ollamaResult = null;
   try {
-    const raw = await callOllama(prompt);
+    const sanitizedPrompt = replaceEngineering(prompt);
+    const raw = await callOllama(sanitizedPrompt);
     ollamaResult = extractJson(raw);
   } catch (e) {
     console.error('Ollama CV enhancement failed:', e.message);
@@ -186,6 +221,7 @@ function generateFromData(cvData, job) {
 
 function generateHTML(cv, ollamaResult) {
   const bullet = String.fromCharCode(8226);
+  cv.skills_ordered = sanitizeSkills([...cv.skills_ordered]);
   const skillsHTML = cv.skills_ordered.join(' ' + bullet + ' ');
 
   const bulletsHTML = (ollamaResult.softfocus_entregas_ajustadas || [])
@@ -200,6 +236,8 @@ function generateHTML(cv, ollamaResult) {
     .replace('{{softfocus_cargo}}', ollamaResult.softfocus_cargo || 'Product Designer')
     .replace('{{softfocus_resultados}}', ollamaResult.softfocus_resultados || '')
     .replace('{{softfocus_bullets}}', bulletsHTML);
+
+  html = replaceEngineering(html);
 
   const publicDir = path.join(__dirname, '..', 'public');
   if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });

@@ -3,8 +3,10 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
+const net = require('net');
 const matcher = require('./matcher');
 const cvGenerator = require('./cv_generator');
+const multer = require('multer');
 
 const app = express();
 const PORT = 3001;
@@ -12,6 +14,16 @@ const OLLAMA_HOST = 'http://127.0.0.1:11434';
 const OLLAMA_MODEL = 'job-analyzer';
 const db = new Database(path.join(__dirname, '..', 'career_agent.db'));
 const CV_PATH = path.join(__dirname, '..', 'sample_cv.json');
+
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) =>
+    cb(null, `${Date.now()}-${file.originalname.replace(/\s+/g, '_')}`)
+});
+const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -86,7 +98,10 @@ app.post('/api/jobs/:id/details', (req, res) => {
   try {
     const applied_date = req.body.applied_date || null;
     const platform = req.body.platform || null;
-    db.prepare('UPDATE vagas SET applied_date = ?, platform = ? WHERE id = ?').run(applied_date, platform, req.params.id);
+    const interview_type = req.body.interview_type || null;
+    const location = req.body.location || null;
+    db.prepare('UPDATE vagas SET applied_date = ?, platform = ?, interview_type = ?, location = ? WHERE id = ?')
+      .run(applied_date, platform, interview_type, location, req.params.id);
 
     // Recalcular matching
     const row = db.prepare('SELECT * FROM vagas WHERE id = ?').get(req.params.id);
@@ -449,7 +464,119 @@ try { db.exec("ALTER TABLE vagas ADD COLUMN applied_date TEXT"); } catch {}
 try { db.exec("ALTER TABLE vagas ADD COLUMN platform TEXT"); } catch {}
 try { db.exec("ALTER TABLE vagas ADD COLUMN job_text TEXT"); } catch {}
 try { db.exec("ALTER TABLE vagas ADD COLUMN matching_score INTEGER"); } catch {}
+try { db.exec("ALTER TABLE vagas ADD COLUMN interview_type TEXT"); } catch {}
+try { db.exec("ALTER TABLE vagas ADD COLUMN location TEXT"); } catch {}
 
-app.listen(PORT, '127.0.0.1', () => {
-  console.log(`API rodando em http://127.0.0.1:${PORT}`);
+// Tabela de anexos
+db.exec(`
+  CREATE TABLE IF NOT EXISTS attachments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    job_id INTEGER NOT NULL,
+    filename TEXT NOT NULL,
+    original_name TEXT NOT NULL,
+    mimetype TEXT,
+    size INTEGER,
+    created_at TEXT DEFAULT (datetime('now'))
+  )
+`);
+
+// Listar anexos de uma vaga
+app.get('/api/jobs/:id/attachments', (req, res) => {
+  try {
+    const rows = db.prepare(
+      'SELECT id, original_name, mimetype, size, created_at FROM attachments WHERE job_id = ? ORDER BY created_at DESC'
+    ).all(req.params.id);
+    res.json({ success: true, attachments: rows });
+  } catch (e) {
+    res.json({ success: false, error: e.message });
+  }
 });
+
+// Upload de anexo
+app.post('/api/jobs/:id/attachments', upload.single('file'), (req, res) => {
+  if (!req.file) return res.json({ success: false, error: 'Nenhum arquivo enviado' });
+  try {
+    db.prepare(
+      'INSERT INTO attachments (job_id, filename, original_name, mimetype, size) VALUES (?, ?, ?, ?, ?)'
+    ).run(
+      req.params.id,
+      req.file.filename,
+      req.file.originalname,
+      req.file.mimetype,
+      req.file.size
+    );
+    res.json({ success: true, filename: req.file.filename, original_name: req.file.originalname });
+  } catch (e) {
+    res.json({ success: false, error: e.message });
+  }
+});
+
+// Download/visualização de anexo
+app.get('/api/attachments/:filename', (req, res) => {
+  const filePath = path.join(uploadDir, req.params.filename);
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Arquivo não encontrado' });
+  res.sendFile(filePath);
+});
+
+// Excluir anexo
+app.delete('/api/attachments/:id', (req, res) => {
+  try {
+    const row = db.prepare('SELECT filename FROM attachments WHERE id = ?').get(req.params.id);
+    if (!row) return res.json({ success: false, error: 'Não encontrado' });
+    const filePath = path.join(uploadDir, row.filename);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    db.prepare('DELETE FROM attachments WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
+  } catch (e) {
+    res.json({ success: false, error: e.message });
+  }
+});
+
+// Upload de arquivo para nova vaga
+app.post('/api/jobs/upload', upload.single('file'), (req, res) => {
+  if (!req.file) return res.json({ success: false, error: 'Nenhum arquivo enviado' });
+  res.json({ success: true, filename: req.file.filename, path: req.file.path });
+});
+
+// ── Graceful startup com liberação de porta ──────────
+function checkPort(port) {
+  return new Promise((resolve) => {
+    const tester = net.createServer()
+      .once('error', () => resolve(false))
+      .once('listening', () => tester.close(() => resolve(true)))
+      .listen(port, '127.0.0.1');
+  });
+}
+
+async function startServer() {
+  const portFree = await checkPort(PORT);
+  if (!portFree) {
+    console.warn(`⚠️  Porta ${PORT} em uso. Aguardando 2s e tentando novamente...`);
+    await new Promise(r => setTimeout(r, 2000));
+    const retry = await checkPort(PORT);
+    if (!retry) {
+      console.error(`❌ Porta ${PORT} ainda ocupada. Rode: npx kill-port ${PORT}`);
+      process.exit(1);
+    }
+  }
+  const server = app.listen(PORT, '127.0.0.1', () => {
+    console.log(`API rodando em http://127.0.0.1:${PORT}`);
+  }).on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`❌ Porta ${PORT} ocupada. Rode: npx kill-port ${PORT}`);
+      process.exit(1);
+    }
+    throw err;
+  });
+
+  process.on('SIGTERM', () => {
+    console.log('Encerrando servidor...');
+    server.close(() => process.exit(0));
+  });
+  process.on('SIGINT', () => {
+    console.log('Encerrando servidor...');
+    server.close(() => process.exit(0));
+  });
+}
+
+startServer();
