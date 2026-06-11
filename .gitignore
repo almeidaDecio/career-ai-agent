@@ -1,4 +1,22 @@
+# Dependências
 node_modules/
+
+# Banco de dados
 *.db
-*.zip
+
+# Uploads e arquivos gerados
+backend/uploads/
+public/cv_otimizado.html
+
+# Cache de CVs gerados
+data/
+
+# Logs
+*.log
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Variáveis de ambiente
 .env

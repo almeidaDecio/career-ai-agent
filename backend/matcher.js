@@ -6,6 +6,7 @@ const CV_PATH = path.join(__dirname, '..', 'sample_cv.json');
 const synonyms = {
   'usability testing': 'testes usabilidade',
   'user research': 'pesquisa usuario',
+  'ux research': 'pesquisa usuario',
   'user flows': 'fluxos usuario',
   'interaction design': 'design interacao',
   'prototyping': 'prototipacao',
@@ -34,11 +35,23 @@ function normalize(s) {
 function buildCvTexts(cv) {
   const texts = [];
   if (cv.summary) texts.push(normalize(cv.summary));
-  for (const cat of Object.values(cv.categories)) {
-    for (const skill of (cat.skills || [])) {
-      texts.push(normalize(skill));
+  if (cv.categories) {
+    for (const cat of Object.values(cv.categories)) {
+      for (const skill of (cat.skills || [])) {
+        texts.push(normalize(skill));
+      }
+      if (cat.evidence) texts.push(normalize(cat.evidence));
     }
-    if (cat.evidence) texts.push(normalize(cat.evidence));
+  }
+  if (cv.skills_ordered) {
+    for (const s of cv.skills_ordered) texts.push(normalize(s));
+  }
+  if (cv.experience) {
+    for (const exp of cv.experience) {
+      if (exp.highlights) exp.highlights.forEach(h => texts.push(normalize(h)));
+      if (exp.resultados) texts.push(normalize(exp.resultados));
+      if (exp.skills) exp.skills.forEach(s => texts.push(normalize(s)));
+    }
   }
   if (cv.education) {
     for (const edu of cv.education) {
@@ -49,6 +62,17 @@ function buildCvTexts(cv) {
     for (const lang of cv.languages) {
       texts.push(normalize(`${lang.language} ${lang.level}`));
     }
+  }
+  // Se for CV da Ollama (sem categories), complementa com o CV base para não perder matches
+  if (!cv.categories) {
+    try {
+      const baseCv = JSON.parse(fs.readFileSync(CV_PATH, 'utf8'));
+      if (baseCv.categories) {
+        for (const cat of Object.values(baseCv.categories)) {
+          if (cat.evidence) texts.push(normalize(cat.evidence));
+        }
+      }
+    } catch {}
   }
   texts.push(texts.join(' '));
   return texts;
@@ -78,7 +102,15 @@ function hasSkill(skillName, cvTexts) {
 
 function hasTool(toolName, cv) {
   const nt = normalize(toolName);
-  for (const skill of (cv.categories.tools.skills || [])) {
+  const allSkills = [];
+  if (cv.categories?.tools?.skills) allSkills.push(...cv.categories.tools.skills);
+  if (cv.skills_ordered) allSkills.push(...cv.skills_ordered);
+  if (cv.experience) {
+    for (const exp of cv.experience) {
+      if (exp.skills) allSkills.push(...exp.skills);
+    }
+  }
+  for (const skill of allSkills) {
     const ns = normalize(skill);
     if (ns.includes(nt) || nt.includes(ns)) return true;
   }
@@ -105,11 +137,19 @@ function run(job) {
   const totalNice = nice.length;
   const totalTools = tools.length;
 
-  const sr = totalRequired > 0 ? (matchedRequired.length / totalRequired) * 70 : 70;
-  const sn = totalNice > 0 ? (matchedNice.length / totalNice) * 20 : 20;
-  const st = totalTools > 0 ? (matchedTools.length / totalTools) * 10 : 10;
+  const hasRequired = totalRequired > 0;
+  const hasNice = totalNice > 0;
+  const hasTools = totalTools > 0;
+  const weightRequired = hasRequired ? 70 : 0;
+  const weightNice     = hasNice     ? 20 : 0;
+  const weightTools    = hasTools    ? 10 : 0;
+  const totalWeight    = weightRequired + weightNice + weightTools || 100;
 
-  const overall = Math.round(sr + sn + st);
+  const sr = hasRequired ? (matchedRequired.length / totalRequired) * weightRequired : 0;
+  const sn = hasNice     ? (matchedNice.length     / totalNice)     * weightNice     : 0;
+  const st = hasTools    ? (matchedTools.length     / totalTools)    * weightTools    : 0;
+
+  const overall = Math.round(((sr + sn + st) / totalWeight) * 100);
   const atsScore = ats.length > 0 ? Math.round((matchedAts.length / ats.length) * 100) : 100;
 
   return {
@@ -122,4 +162,44 @@ function run(job) {
   };
 }
 
-module.exports = { run };
+// Roda o match com um CV já gerado (objeto em memória, não o arquivo)
+function runWithCV(cvObj, job) {
+  try {
+    const cvTexts = buildCvTexts(cvObj);
+    const required = job.required_skills || [];
+    const nice = job.nice_to_have_skills || [];
+    const tools = job.tools || [];
+    const ats = job.ats_keywords || [];
+
+    const matchedRequired = required.filter(s => hasSkill(s, cvTexts));
+    const matchedNice = nice.filter(s => hasSkill(s, cvTexts));
+    const matchedTools = tools.filter(s => hasTool(s, cvObj));
+    const matchedAts = ats.filter(kw => hasSkill(kw, cvTexts));
+
+    const totalRequired = required.length;
+    const totalNice = nice.length;
+    const totalTools = tools.length;
+
+    const hasRequired = totalRequired > 0;
+    const hasNice = totalNice > 0;
+    const hasTools = totalTools > 0;
+
+    const weightRequired = hasRequired ? 70 : 0;
+    const weightNice     = hasNice     ? 20 : 0;
+    const weightTools    = hasTools    ? 10 : 0;
+    const totalWeight    = weightRequired + weightNice + weightTools || 100;
+
+    const sr = hasRequired ? (matchedRequired.length / totalRequired) * weightRequired : 0;
+    const sn = hasNice     ? (matchedNice.length     / totalNice)     * weightNice     : 0;
+    const st = hasTools    ? (matchedTools.length     / totalTools)    * weightTools    : 0;
+
+    const overall = Math.round(((sr + sn + st) / totalWeight) * 100);
+    const atsScore = ats.length > 0 ? Math.round((matchedAts.length / ats.length) * 100) : 100;
+
+    return { score: overall, atsScore, matchedRequired, matchedNice, matchedTools, matchedAts };
+  } catch {
+    return { score: null, error: 'Erro ao calcular score do CV ajustado' };
+  }
+}
+
+module.exports = { run, runWithCV };

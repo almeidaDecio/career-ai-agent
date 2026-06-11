@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Career AI Agent</title>
+  <title>AjustaCV</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
@@ -13,7 +13,7 @@
     <div class="logo">
       <div class="logo-icon">✦</div>
       <div>
-        <h1>Career AI Agent</h1>
+        <h1><span style="font-weight:400">Ajusta</span><strong>CV</strong></h1>
         <p class="logo-subtitle">Gerencie suas candidaturas</p>
       </div>
     </div>
@@ -129,6 +129,10 @@
         <button class="btn-primary" id="btnCloseError" style="padding:8px 24px">Ok</button>
       </div>
     </div>
+  </div>
+
+  <div class="toast-container hidden" id="toastContainer">
+    <div class="toast" id="toastMessage">Nenhum CV gerado ainda. Clique em "Gerar CV" primeiro.</div>
   </div>
 
   <!-- Side Panel Detalhes da Vaga -->

@@ -188,7 +188,7 @@ document.getElementById('jobFileInput').addEventListener('change', async (e) => 
   statusEl.className = 'modal-status loading';
   statusEl.innerHTML = '<span class="spinner"></span> Lendo arquivo...';
   try {
-    const r = await fetch(`${API}/api/jobs/upload`, { method: 'POST', body: formData });
+    const r = await fetch(`${API}/api/upload/job-file`, { method: 'POST', body: formData });
     const data = await r.json();
     if (data.success) {
       statusEl.className = 'modal-status success';
@@ -214,6 +214,18 @@ async function generateCV(id) {
     const data = await r.json();
     if (data.success) {
       const cv = data.cv;
+      const adjScore = data.adjusted_score;
+
+      // Atualizar card de match do CV ajustado
+      if (adjScore != null) {
+        const adjColor = adjScore >= 80 ? 'var(--green)' : adjScore >= 50 ? 'var(--yellow)' : 'var(--red)';
+        const cardAdj = document.getElementById('cardAdjustedScore');
+        const fillAdj = document.getElementById('adjScoreFill');
+        const valAdj  = document.getElementById('adjScoreValue');
+        if (cardAdj) { cardAdj.classList.remove('info-card-disabled'); }
+        if (fillAdj) { fillAdj.style.width = adjScore + '%'; fillAdj.style.background = adjColor; }
+        if (valAdj)  { valAdj.textContent = adjScore + '%'; valAdj.style.color = adjColor; }
+      }
       resultDiv.style.display = 'block';
       resultDiv.innerHTML = `
         <div style="background:var(--surface2);border-radius:10px;padding:16px">
@@ -254,6 +266,15 @@ async function generateCV(id) {
 async function exportPdf(id) {
   try {
     const r = await fetch(`${API}/api/jobs/${id}/export-pdf`, { method: 'POST' });
+    if (!r.ok) {
+      const data = await r.json();
+      if (data.error && data.error.includes('Gere o CV')) {
+        showToast('Nenhum CV gerado ainda. Clique em "Gerar CV" primeiro.');
+        return;
+      }
+      showError('Erro ao exportar PDF', data.error || r.statusText, 'exportPdf');
+      return;
+    }
     const data = await r.json();
     if (data.success) {
       window.open(`${API}${data.url}`, '_blank');
@@ -276,6 +297,8 @@ async function saveJobDetail(id) {
     : (platformEl?.value.trim() || '');
   const location = document.getElementById('editLocation')?.value.trim() || '';
   const interview_type = document.getElementById('editInterviewType')?.value || '';
+  const company = document.getElementById('editCompany')?.value.trim() || '';
+  const seniority = document.getElementById('editSeniority')?.value || '';
   try {
     const r = await fetch(`${API}/api/jobs/${id}/details`, {
       method: 'POST',
@@ -284,7 +307,9 @@ async function saveJobDetail(id) {
         applied_date: date || null,
         platform: platform || null,
         location: location || null,
-        interview_type: interview_type || null
+        interview_type: interview_type || null,
+        company: company || null,
+        seniority: seniority || null
       })
     });
     const result = await r.json();
@@ -338,8 +363,18 @@ async function openDetail(id) {
 
   if (ringEl) ringEl.innerHTML = '';
 
+  const genAt = job.generated_at ? new Date(job.generated_at).toLocaleString('pt-BR') : null;
+
   body.innerHTML = `
     <div id="cvResult" style="display:none;margin-bottom:16px"></div>
+
+    ${genAt ? `
+    <div class="detail-gen-info">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span>Primeiro CV gerado em <strong>${genAt}</strong></span>
+    </div>
+    <hr class="side-panel-rule">
+    ` : ''}
 
     <div class="info-cards-grid">
 
@@ -349,7 +384,7 @@ async function openDetail(id) {
         </div>
         <div class="info-card-content">
           <span class="info-card-label">Empresa</span>
-          <span class="info-card-value">${job.company && job.company !== 'null' ? job.company : '—'}</span>
+          <input type="text" class="detail-input info-card-input" id="editCompany" value="${job.company && job.company !== 'null' ? job.company : ''}" placeholder="—">
         </div>
       </div>
 
@@ -369,7 +404,21 @@ async function openDetail(id) {
         </div>
         <div class="info-card-content">
           <span class="info-card-label">Senioridade</span>
-          <span class="info-card-value">${job.seniority && job.seniority !== 'not_specified' ? job.seniority : '—'}</span>
+          <select class="detail-input info-card-select" id="editSeniority">
+            <option value="">— Selecione —</option>
+            <option value="nao_informada" ${job.seniority === 'nao_informada' ? 'selected' : ''}>Não informada</option>
+            <option value="junior"  ${job.seniority === 'junior' ? 'selected' : ''}>Júnior</option>
+            <option value="pleno"   ${job.seniority === 'pleno' ? 'selected' : ''}>Pleno</option>
+            <option value="senior"  ${job.seniority === 'senior' || job.seniority === 'lead' ? 'selected' : ''}>Senior</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="info-card info-card-match ${job.adjusted_score == null ? 'info-card-disabled' : ''}" id="cardAdjustedScore">
+        <div class="match-bg-fill" id="adjScoreFill" style="width:${job.adjusted_score || 0}%; background:${job.adjusted_score >= 80 ? 'var(--green)' : job.adjusted_score >= 50 ? 'var(--yellow)' : 'var(--red)'};"></div>
+        <div class="info-card-content" style="width:100%;">
+          <span class="info-card-label">Match entre vaga e CV ajustado</span>
+          <span class="match-bar-value" id="adjScoreValue" style="color:${job.adjusted_score >= 80 ? 'var(--green)' : job.adjusted_score >= 50 ? 'var(--yellow)' : 'var(--red)'}">${job.adjusted_score != null ? job.adjusted_score + '%' : '—'}</span>
         </div>
       </div>
 
@@ -516,6 +565,16 @@ function escapeHtml(text) {
   return d.innerHTML;
 }
 
+function showToast(msg) {
+  const container = document.getElementById('toastContainer');
+  const el = document.getElementById('toastMessage');
+  if (!container || !el) return;
+  el.textContent = msg;
+  container.classList.remove('hidden');
+  clearTimeout(container._timeout);
+  container._timeout = setTimeout(() => container.classList.add('hidden'), 3000);
+}
+
 function showError(title, message, context) {
   const overlay = document.getElementById('modalError');
   document.getElementById('errorTitle').textContent = title;
@@ -635,7 +694,9 @@ function saveCustomPlatform(name) {
   const existing = getCustomPlatforms();
   if (!existing.includes(name)) {
     existing.push(name);
-    localStorage.setItem('customPlatforms', JSON.stringify(existing));
+    try {
+      localStorage.setItem('customPlatforms', JSON.stringify(existing));
+    } catch { /* modo privado ou storage indisponível */ }
   }
 }
 
@@ -713,7 +774,7 @@ async function searchCities(query) {
       }).join('');
       list.style.display = 'block';
     } catch { list.innerHTML = ''; list.style.display = 'none'; }
-  }, 350);
+  }, 500);
 }
 
 function selectCity(label) {
@@ -752,6 +813,11 @@ document.getElementById('modalNovaVaga').addEventListener('click', e => {
     document.getElementById('modalNovaVaga').classList.add('hidden');
 });
 document.getElementById('sideOverlay').addEventListener('click', closeDetail);
+
+// Toast dismiss on click
+document.getElementById('toastContainer').addEventListener('click', () => {
+  document.getElementById('toastContainer').classList.add('hidden');
+});
 
 // Error modal
 document.getElementById('modalError').addEventListener('click', e => {

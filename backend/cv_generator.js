@@ -13,31 +13,59 @@ function replaceEngineering(text) {
     .replace(/\bengenharia\b/g, 'desenvolvimento');
 }
 
+// ── Métricas fixas — nunca podem ser removidas ou parafraseadas ──────────
+const FIXED_METRICS = [
+  'Mais de 50 novas telas entregues para evolução da plataforma no Figma',
+  '15+ entrevistas com usuários conduzidas para novas funcionalidades e refinamento de fluxos existentes',
+];
+
+// Checks por regex — detectam variações de escrita do Ollama
+const METRICS_CHECKS = [
+  b => /50 nov|cinquenta/i.test(b),
+  b => /15\+|quinze|15 entrev/i.test(b),
+];
+
+// Verifica se um bullet duplica uma métrica fixa
+function isDuplicateOfFixed(bullet) {
+  return METRICS_CHECKS.some(check => check(bullet));
+}
+
+// Garante que todas as métricas fixas estão presentes — reinjeta só as ausentes
+function ensureFixedMetrics(entregas) {
+  let result = Array.isArray(entregas) ? [...entregas] : [];
+  const missingIndexes = [];
+  METRICS_CHECKS.forEach((check, i) => {
+    const found = result.some(b => check(b));
+    if (!found) missingIndexes.push(i);
+  });
+  const toInject = missingIndexes.map(i => FIXED_METRICS[i]);
+  return [...toInject, ...result];
+}
+
+// Detecta termos estruturantes na vaga e gera instrução adicional para o prompt
+function detectStructuralTerms(job) {
+  const jobText = JSON.stringify(job).toLowerCase();
+  const terms = [];
+  if (jobText.includes('discovery')) terms.push('Discovery');
+  if (jobText.includes('delivery')) terms.push('Delivery');
+  if (terms.length === 0) return '';
+  const termsList = terms.join(' e ');
+  return `
+8. TERMOS ESTRUTURANTES DETECTADOS NA VAGA: A vaga menciona explicitamente "${termsList}".
+   Esses termos DEVEM aparecer como eixos estruturantes:
+   - No Resumo Profissional: mencionar que o candidato atua "de ponta a ponta entre ${termsList}" ou equivalente natural.
+   - Nos bullets da Softfocus: ao menos 1 bullet deve contextualizar a atuação em ${termsList} de forma orgânica.
+   - NÃO usar os termos de forma isolada ou como keyword stuffing — sempre com contexto de ação.`;
+}
+
 function sanitizeSkills(skills) {
-  const normalize = s => s.toLowerCase().replace(/[\s\-_]/g, '');
-  const UX = normalize('UX Research');
-  const USER = normalize('User Research');
-  const result = [];
-  for (let i = 0; i < skills.length; i++) {
-    const curr = normalize(skills[i]);
-    const prev = result.length > 0 ? normalize(result[result.length - 1]) : '';
-    const isUX = curr === UX;
-    const isUser = curr === USER;
-    const prevIsUX = prev === UX;
-    const prevIsUser = prev === USER;
-    if ((isUX && prevIsUser) || (isUser && prevIsUX)) {
-      const separator = skills.slice(i + 1).find(s => {
-        const n = normalize(s); return n !== UX && n !== USER;
-      });
-      if (separator) {
-        result.push(separator);
-        const sepIdx = skills.indexOf(separator, i + 1);
-        if (sepIdx !== -1) skills.splice(sepIdx, 1);
-      }
-    }
-    result.push(skills[i]);
-  }
-  return result;
+  const seen = new Set();
+  return skills.filter(s => {
+    const key = s.toLowerCase().trim();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function loadBaseCV() {
@@ -138,6 +166,8 @@ Entregas originais:
 - Integrei ferramentas de IA ao processo de design.
 ` : 'N/A';
 
+  const structuralTermsRule = detectStructuralTerms(job);
+
   const prompt = `Você é um especialista em Recrutamento, Talent Acquisition e redator sênior de currículos focado em tecnologia.
 Sua tarefa é reescrever APENAS duas seções do currículo do candidato (o "Resumo Profissional" e a experiência na "Softfocus") para otimizá-las para a vaga fornecida. O restante do currículo não deve ser alterado.
 [DESCRITIVO DA VAGA]
@@ -152,7 +182,21 @@ ${softfocusText}
 3. PARALELISMO OBRIGATÓRIO NA SOFTFOCUS: Inicie TODOS os tópicos de atividades com substantivos de ação (ex: "Desenvolvimento...", "Condução...", "Estruturação...", "Colaboração...", "Concepção e projeto...", "Documentação..."). Nunca use verbos no infinitivo como "Conduzir".
 4. Mantenha exatamente de 6 a 8 bullets na Softfocus, adaptando as atividades originais do candidato.
 5. Mantenha as datas e dados quantitativos intactos.
-6. A saída DEVE ser estritamente no formato JSON abaixo, sem qualquer texto introdutório ou explicativo:
+6. REGRA OBRIGATÓRIA — RESULTADOS QUANTITATIVOS DA SOFTFOCUS:
+   Os bullets abaixo DEVEM aparecer nos softfocus_entregas_ajustadas
+   EXATAMENTE como estão escritos. Não resuma, não parafraseie,
+   não substitua números por palavras, não use "significativo"
+   no lugar de "10x", não escreva "dois" no lugar de "2".
+   Copie-os literalmente:
+
+    • Mais de 50 novas telas entregues para evolução da plataforma no Figma
+    • 15+ entrevistas com usuários conduzidas para novas funcionalidades e refinamento de fluxos existentes
+
+    Use exatamente: "50" e "15+".
+   NÃO inclua esses bullets nos softfocus_entregas_ajustadas — eles serão adicionados automaticamente.
+   NÃO inicie nenhum bullet com •, -, – ou *. Retorne apenas o texto limpo em cada item do array.
+${structuralTermsRule}
+7. A saída DEVE ser estritamente no formato JSON abaixo, sem qualquer texto introdutório ou explicativo:
 {
   "resumo_ajustado": "Texto...",
   "softfocus_cargo": "Product Designer",
@@ -191,13 +235,52 @@ ${softfocusText}
     const sfIdx = finalExperience.findIndex(findSoftfocus);
     if (sfIdx !== -1) {
       if (ollamaResult.softfocus_entregas_ajustadas && Array.isArray(ollamaResult.softfocus_entregas_ajustadas)) {
-        const entregas = ollamaResult.softfocus_entregas_ajustadas.filter(Boolean);
+        // Remove bullets que duplicam métricas fixas, depois reinjeta as ausentes
+        const semDuplicatas = ollamaResult.softfocus_entregas_ajustadas
+          .filter(Boolean)
+          .filter(b => !isDuplicateOfFixed(b));
+        const entregas = ensureFixedMetrics(semDuplicatas);
         if (entregas.length) {
           finalExperience[sfIdx].highlights = entregas;
+          ollamaResult.softfocus_entregas_ajustadas = entregas;
         }
       }
+
+      // Validar softfocus_resultados — garantir que os números não foram perdidos
       if (ollamaResult.softfocus_resultados) {
+        const res = ollamaResult.softfocus_resultados;
+        const temNumeros =
+          /5 novos|santander|banco do brasil/i.test(res) &&
+          /10x|10 vez/i.test(res);
+        if (!temNumeros) {
+          ollamaResult.softfocus_resultados =
+            'O trabalho contribuiu diretamente para a conquista de 5 novos clientes, incluindo Santander e Banco do Brasil, além de viabilizar um crescimento de 10 vezes na volumetria processada pelos clientes.';
+        }
         finalExperience[sfIdx].resultados = ollamaResult.softfocus_resultados;
+      }
+    }
+
+    // Garantir Discovery/Delivery no resumo se a vaga os exige
+    const jobText = JSON.stringify(job).toLowerCase();
+    const needsDiscovery = jobText.includes('discovery');
+    const needsDelivery = jobText.includes('delivery');
+    if (ollamaResult?.resumo_ajustado) {
+      const resumoLower = ollamaResult.resumo_ajustado.toLowerCase();
+      const missingDiscovery = needsDiscovery && !resumoLower.includes('discovery');
+      const missingDelivery = needsDelivery && !resumoLower.includes('delivery');
+      if (missingDiscovery || missingDelivery) {
+        const missing = [
+          missingDiscovery ? 'Discovery' : '',
+          missingDelivery ? 'Delivery' : ''
+        ].filter(Boolean).join(' e ');
+        const firstBreak = ollamaResult.resumo_ajustado.indexOf('\n');
+        const insertPoint = firstBreak !== -1 ? firstBreak : ollamaResult.resumo_ajustado.length;
+        const injection = ` Com atuação de ponta a ponta entre ${missing}, equilibra estratégia, execução e qualidade na entrega de produtos digitais.`;
+        ollamaResult.resumo_ajustado =
+          ollamaResult.resumo_ajustado.slice(0, insertPoint) +
+          injection +
+          ollamaResult.resumo_ajustado.slice(insertPoint);
+        finalSummary = ollamaResult.resumo_ajustado;
       }
     }
   }
@@ -219,13 +302,25 @@ function generateFromData(cvData, job) {
   return base;
 }
 
+function capitalizeSkill(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 function generateHTML(cv, ollamaResult) {
   const bullet = String.fromCharCode(8226);
   cv.skills_ordered = sanitizeSkills([...cv.skills_ordered]);
-  const skillsHTML = cv.skills_ordered.join(' ' + bullet + ' ');
+  const skillsHTML = cv.skills_ordered.map(capitalizeSkill).join(' ' + bullet + ' ');
 
-  const bulletsHTML = (ollamaResult.softfocus_entregas_ajustadas || [])
-    .map(bullet => `<li>${bullet}</li>`).join('\n        ');
+  const cleanBullet = s => s.replace(/^[\s•\-–\*]+/, '').trim();
+
+  const entregas = ollamaResult.softfocus_entregas_ajustadas || [];
+  const fixedMetricsHTML = FIXED_METRICS
+    .map(m => `<li>${cleanBullet(m)}</li>`).join('\n        ');
+
+  const dynamicBulletsHTML = entregas
+    .filter(e => !FIXED_METRICS.includes(e))
+    .filter(e => !isDuplicateOfFixed(e))
+    .map(m => `<li>${cleanBullet(m)}</li>`).join('\n        ');
 
   let template = fs.readFileSync(path.join(__dirname, 'cv_template.html'), 'utf8');
 
@@ -235,7 +330,8 @@ function generateHTML(cv, ollamaResult) {
     .replace('{{softfocus_periodo}}', ollamaResult.softfocus_periodo || '')
     .replace('{{softfocus_cargo}}', ollamaResult.softfocus_cargo || 'Product Designer')
     .replace('{{softfocus_resultados}}', ollamaResult.softfocus_resultados || '')
-    .replace('{{softfocus_bullets}}', bulletsHTML);
+    .replace('{{softfocus_metrics}}', fixedMetricsHTML)
+    .replace('{{softfocus_bullets_dynamic}}', dynamicBulletsHTML);
 
   html = replaceEngineering(html);
 

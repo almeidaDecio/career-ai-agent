@@ -100,8 +100,10 @@ app.post('/api/jobs/:id/details', (req, res) => {
     const platform = req.body.platform || null;
     const interview_type = req.body.interview_type || null;
     const location = req.body.location || null;
-    db.prepare('UPDATE vagas SET applied_date = ?, platform = ?, interview_type = ?, location = ? WHERE id = ?')
-      .run(applied_date, platform, interview_type, location, req.params.id);
+    const company = req.body.company || null;
+    const seniority = req.body.seniority || null;
+    db.prepare('UPDATE vagas SET applied_date = ?, platform = ?, interview_type = ?, location = ?, company = ?, seniority = ? WHERE id = ?')
+      .run(applied_date, platform, interview_type, location, company, seniority, req.params.id);
 
     // Recalcular matching
     const row = db.prepare('SELECT * FROM vagas WHERE id = ?').get(req.params.id);
@@ -210,10 +212,31 @@ Preencha todas as categorias com base no texto. Se uma categoria não tiver skil
 });
 
 // Gerar CV otimizado para a vaga
+function generateCVHTML(cv, job, id) {
+  const sfExp = cv.experience.find(e => e.company.toLowerCase().includes('softfocus'));
+  const ollamaResult = {
+    resumo_ajustado: cv.summary,
+    softfocus_cargo: sfExp ? sfExp.role : 'Product Designer',
+    softfocus_periodo: sfExp && sfExp.period ? sfExp.period : 'jul/2021 – fev/2026',
+    softfocus_resultados: sfExp && sfExp.resultados ? sfExp.resultados : '',
+    softfocus_entregas_ajustadas: sfExp && sfExp.highlights ? sfExp.highlights : []
+  };
+  cvGenerator.generateHTML(cv, ollamaResult);
+  try {
+    const matcherAdj = require('./matcher');
+    const matchAdj = matcherAdj.runWithCV(cv, job);
+    if (matchAdj.score !== null) {
+      db.prepare('UPDATE vagas SET adjusted_score = ? WHERE id = ?').run(matchAdj.score, id);
+    }
+    return matchAdj.score;
+  } catch { return null; }
+}
+
 app.post('/api/jobs/:id/generate-cv', async (req, res) => {
   try {
     const row = db.prepare('SELECT * FROM vagas WHERE id = ?').get(req.params.id);
     if (!row) return res.status(404).json({ error: 'Vaga não encontrada' });
+    const cachePath = path.join(__dirname, '..', 'data', `cv_cache_${req.params.id}.json`);
     const job = {
       required_skills: safeJson(row.required_skills),
       nice_to_have_skills: safeJson(row.nice_to_have_skills),
@@ -221,6 +244,14 @@ app.post('/api/jobs/:id/generate-cv', async (req, res) => {
       ats_keywords: safeJson(row.ats_keywords)
     };
     let cv;
+    if (fs.existsSync(cachePath)) {
+      cv = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+      if (!row.generated_at) {
+        db.prepare('UPDATE vagas SET generated_at = ? WHERE id = ?').run(new Date().toISOString(), req.params.id);
+      }
+      const adjScore = generateCVHTML(cv, job, req.params.id);
+      return res.json({ success: true, cv, adjusted_score: adjScore, cached: true });
+    }
     if (req.body && req.body.cv_json) {
       const cvData = typeof req.body.cv_json === 'string' ? JSON.parse(req.body.cv_json) : req.body.cv_json;
       cv = cvGenerator.generateFromData(cvData, job);
@@ -233,18 +264,13 @@ app.post('/api/jobs/:id/generate-cv', async (req, res) => {
     if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
     fs.writeFileSync(path.join(dataDir, `cv_cache_${req.params.id}.json`), JSON.stringify(cv, null, 2), 'utf8');
 
-    // Generate HTML for PDF export
-    const sfExp = cv.experience.find(e => e.company.toLowerCase().includes('softfocus'));
-    const ollamaResult = {
-      resumo_ajustado: cv.summary,
-      softfocus_cargo: sfExp ? sfExp.role : 'Product Designer',
-      softfocus_periodo: sfExp && sfExp.period ? sfExp.period : 'jul/2021 – fev/2026',
-      softfocus_resultados: sfExp && sfExp.resultados ? sfExp.resultados : '',
-      softfocus_entregas_ajustadas: sfExp && sfExp.highlights ? sfExp.highlights : []
-    };
-    cvGenerator.generateHTML(cv, ollamaResult);
+    // Marcar data/hora da primeira geração
+    if (!row.generated_at) {
+      db.prepare('UPDATE vagas SET generated_at = ? WHERE id = ?').run(new Date().toISOString(), req.params.id);
+    }
 
-    res.json({ success: true, cv });
+    const adjScore = generateCVHTML(cv, job, req.params.id);
+    res.json({ success: true, cv, adjusted_score: adjScore });
   } catch (e) {
     console.error('generate-cv error:', e);
     res.status(500).json({ error: e.message });
@@ -256,17 +282,20 @@ app.post('/api/jobs/:id/save-cv-file', async (req, res) => {
   try {
     const row = db.prepare('SELECT * FROM vagas WHERE id = ?').get(req.params.id);
     if (!row) return res.status(404).json({ error: 'Vaga não encontrada' });
-    const job = {
-      required_skills: safeJson(row.required_skills),
-      nice_to_have_skills: safeJson(row.nice_to_have_skills),
-      tools: safeJson(row.tools),
-      ats_keywords: safeJson(row.ats_keywords)
-    };
+    const cachePath = path.join(__dirname, '..', 'data', `cv_cache_${req.params.id}.json`);
     let cv;
-    if (req.body && req.body.cv_json) {
+    if (fs.existsSync(cachePath)) {
+      cv = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+    } else if (req.body && req.body.cv_json) {
       const cvData = typeof req.body.cv_json === 'string' ? JSON.parse(req.body.cv_json) : req.body.cv_json;
       cv = cvGenerator.generateFromData(cvData, job);
     } else {
+      const job = {
+        required_skills: safeJson(row.required_skills),
+        nice_to_have_skills: safeJson(row.nice_to_have_skills),
+        tools: safeJson(row.tools),
+        ats_keywords: safeJson(row.ats_keywords)
+      };
       cv = await cvGenerator.generateForJob(job);
     }
 
@@ -426,7 +455,37 @@ app.post('/api/extract', async (req, res) => {
   try {
     const { job_text } = req.body;
     if (!job_text) return res.status(400).json({ error: 'Campo job_text é obrigatório' });
-    const raw = await callOllama(job_text);
+
+    const extractPrompt = `Você é um extrator especializado em vagas de emprego para Product Design e UX.
+Analise o texto da vaga abaixo e extraia TODAS as informações no formato JSON exato especificado.
+Seja EXAUSTIVO na extração de skills — não omita nenhuma competência mencionada na vaga.
+
+[TEXTO DA VAGA]
+${job_text}
+
+[REGRAS DE EXTRAÇÃO]
+1. required_skills: Liste TODAS as competências, habilidades e experiências que a vaga descreve como necessárias ou obrigatórias. Inclua: metodologias (discovery, delivery, pesquisa, entrevistas, mapeamento de jornadas), soft skills (comunicação, autonomia, colaboração), contextos (B2B, SaaS, sistemas financeiros, fluxos complexos) e qualquer outra habilidade explicitamente exigida. Mínimo de 8 itens.
+2. nice_to_have_skills: Liste competências descritas como diferenciais, desejáveis ou "será um diferencial". Mínimo de 3 itens se existirem.
+3. tools: Liste APENAS ferramentas e softwares mencionados (ex: Figma, Amplitude, Mixpanel, Jira, Miro). Só ferramentas concretas.
+4. ats_keywords: Liste as palavras-chave mais importantes para ATS — termos que aparecem com destaque ou repetição na vaga.
+5. responsibilities: Liste as principais responsabilidades do cargo.
+6. Extraia job_title, company, seniority (junior/mid/senior/lead), location, experience_years_min.
+
+[FORMATO JSON — responda APENAS com este JSON, sem texto adicional]
+{
+  "job_title": "",
+  "company": "",
+  "seniority": "",
+  "experience_years_min": null,
+  "location": "",
+  "required_skills": [],
+  "nice_to_have_skills": [],
+  "tools": [],
+  "ats_keywords": [],
+  "responsibilities": []
+}`;
+
+    const raw = await callOllama(extractPrompt);
     const v = extractJson(raw);
 
     const match = matcher.run(v);
@@ -464,8 +523,10 @@ try { db.exec("ALTER TABLE vagas ADD COLUMN applied_date TEXT"); } catch {}
 try { db.exec("ALTER TABLE vagas ADD COLUMN platform TEXT"); } catch {}
 try { db.exec("ALTER TABLE vagas ADD COLUMN job_text TEXT"); } catch {}
 try { db.exec("ALTER TABLE vagas ADD COLUMN matching_score INTEGER"); } catch {}
+try { db.exec("ALTER TABLE vagas ADD COLUMN adjusted_score INTEGER"); } catch {}
 try { db.exec("ALTER TABLE vagas ADD COLUMN interview_type TEXT"); } catch {}
 try { db.exec("ALTER TABLE vagas ADD COLUMN location TEXT"); } catch {}
+try { db.exec("ALTER TABLE vagas ADD COLUMN generated_at TEXT"); } catch {}
 
 // Tabela de anexos
 db.exec(`
@@ -532,8 +593,8 @@ app.delete('/api/attachments/:id', (req, res) => {
   }
 });
 
-// Upload de arquivo para nova vaga
-app.post('/api/jobs/upload', upload.single('file'), (req, res) => {
+// Upload de arquivo para nova vaga (rota separada para não conflitar com /api/jobs/:id)
+app.post('/api/upload/job-file', upload.single('file'), (req, res) => {
   if (!req.file) return res.json({ success: false, error: 'Nenhum arquivo enviado' });
   res.json({ success: true, filename: req.file.filename, path: req.file.path });
 });
