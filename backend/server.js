@@ -6,6 +6,7 @@ const http = require('http');
 const net = require('net');
 const matcher = require('./matcher');
 const cvGenerator = require('./cv_generator');
+const skillExpander = require('./skill_expander');
 const multer = require('multer');
 
 const app = express();
@@ -131,11 +132,12 @@ app.post('/api/jobs/:id/recalculate', (req, res) => {
   try {
     const row = db.prepare('SELECT * FROM vagas WHERE id = ?').get(req.params.id);
     if (!row) return res.status(404).json({ error: 'Vaga não encontrada' });
+    const jobText = row.requisitos || row.job_text || '';
     const job = {
-      required_skills: safeJson(row.required_skills),
-      nice_to_have_skills: safeJson(row.nice_to_have_skills),
-      tools: safeJson(row.tools),
-      ats_keywords: safeJson(row.ats_keywords)
+      required_skills: skillExpander.expand(safeJson(row.required_skills), jobText),
+      nice_to_have_skills: skillExpander.expand(safeJson(row.nice_to_have_skills), jobText),
+      tools: skillExpander.expand(safeJson(row.tools), jobText),
+      ats_keywords: skillExpander.expand(safeJson(row.ats_keywords), jobText)
     };
     const match = matcher.run(job);
     if (match.score !== null) {
@@ -185,8 +187,13 @@ Retorno APENAS um JSON válido (sem markdown, sem explicações) com esta estrut
 {
   "name": "Nome completo",
   "current_title": "Cargo atual",
+  "email": "email",
+  "phone": "telefone",
+  "linkedin": "URL do LinkedIn",
+  "portfolio": "URL do portfólio",
   "total_experience_years": número,
   "summary": "Resumo profissional de 2-3 parágrafos",
+  "skills_ordered": ["skill1", "skill2", "skill3"],
   "categories": {
     "research": { "skills": ["skill1", "skill2"], "evidence": "..." },
     "interaction_design": { "skills": ["skill1", "skill2"], "evidence": "..." },
@@ -199,13 +206,58 @@ Retorno APENAS um JSON válido (sem markdown, sem explicações) com esta estrut
     { "company": "Empresa", "role": "Cargo", "years": número, "domain": "Domínio", "highlights": ["...", "..."], "skills": ["...", "..."] }
   ],
   "languages": [ { "language": "Idioma", "level": "Nível" } ],
-  "education": [ { "degree": "Curso", "institution": "Instituição", "year": "ano" } ]
+  "education": [ { "degree": "Curso", "institution": "Instituição", "year": "ano" } ],
+  "certifications": [ { "name": "Nome da certificação", "institution": "Instituição", "year": "ano" } ]
 }
 
-Preencha todas as categorias com base no texto. Se uma categoria não tiver skills no texto, coloque array vazio. Use evidence baseado nas realizações descritas.`;
+Preencha todas os campos com base no texto. Se uma categoria não tiver dados no texto, coloque array vazio. Use evidence baseado nas realizações descritas.`;
     const raw = await callOllama(prompt);
     const cv = extractJson(raw);
     res.json({ success: true, cv });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Formatar CV externo no padrão do projeto
+app.post('/api/cv/format', async (req, res) => {
+  try {
+    let cv = req.body.cv_json;
+    if (!cv) {
+      const { cv_text } = req.body;
+      if (!cv_text) return res.status(400).json({ error: 'Envie cv_text ou cv_json' });
+
+      const prompt = `Você é um extrator de dados de currículos. Analise o texto do CV abaixo e extraia as informações no formato JSON exato especificado.
+
+Texto do CV:
+${cv_text}
+
+Retorno APENAS um JSON válido (sem markdown, sem explicações) com esta estrutura exata:
+{
+  "name": "Nome completo",
+  "current_title": "Cargo atual",
+  "email": "email",
+  "phone": "telefone",
+  "linkedin": "URL do LinkedIn",
+  "portfolio": "URL do portfólio",
+  "total_experience_years": número,
+  "summary": "Resumo profissional de 2-3 parágrafos",
+  "skills_ordered": ["skill1", "skill2", "skill3"],
+  "experience": [
+    { "company": "Empresa", "role": "Cargo", "years": número, "domain": "Domínio", "highlights": ["...", "..."], "skills": ["...", "..."] }
+  ],
+  "languages": [ { "language": "Idioma", "level": "Nível" } ],
+  "education": [ { "degree": "Curso", "institution": "Instituição", "year": "ano" } ],
+  "certifications": [ { "name": "Nome da certificação", "institution": "Instituição", "year": "ano" } ]
+}
+
+Preencha todos os campos. Se não encontrar, deixe string vazia ou array vazio.`;
+      const raw = await callOllama(prompt);
+      cv = extractJson(raw);
+    }
+
+    cvGenerator.generateExternalHTML(cv);
+    res.json({ success: true, url: '/cv_externo.html?print=true' });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -237,18 +289,17 @@ app.post('/api/jobs/:id/generate-cv', async (req, res) => {
     const row = db.prepare('SELECT * FROM vagas WHERE id = ?').get(req.params.id);
     if (!row) return res.status(404).json({ error: 'Vaga não encontrada' });
     const cachePath = path.join(__dirname, '..', 'data', `cv_cache_${req.params.id}.json`);
+    const jobText = row.requisitos || row.job_text || '';
     const job = {
-      required_skills: safeJson(row.required_skills),
-      nice_to_have_skills: safeJson(row.nice_to_have_skills),
-      tools: safeJson(row.tools),
-      ats_keywords: safeJson(row.ats_keywords)
+      required_skills: skillExpander.expand(safeJson(row.required_skills), jobText),
+      nice_to_have_skills: skillExpander.expand(safeJson(row.nice_to_have_skills), jobText),
+      tools: skillExpander.expand(safeJson(row.tools), jobText),
+      ats_keywords: skillExpander.expand(safeJson(row.ats_keywords), jobText)
     };
     let cv;
     if (fs.existsSync(cachePath)) {
       cv = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
-      if (!row.generated_at) {
-        db.prepare('UPDATE vagas SET generated_at = ? WHERE id = ?').run(new Date().toISOString(), req.params.id);
-      }
+      db.prepare('UPDATE vagas SET generated_at = ? WHERE id = ?').run(new Date().toISOString(), req.params.id);
       const adjScore = generateCVHTML(cv, job, req.params.id);
       return res.json({ success: true, cv, adjusted_score: adjScore, cached: true });
     }
@@ -264,15 +315,42 @@ app.post('/api/jobs/:id/generate-cv', async (req, res) => {
     if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
     fs.writeFileSync(path.join(dataDir, `cv_cache_${req.params.id}.json`), JSON.stringify(cv, null, 2), 'utf8');
 
-    // Marcar data/hora da primeira geração
-    if (!row.generated_at) {
-      db.prepare('UPDATE vagas SET generated_at = ? WHERE id = ?').run(new Date().toISOString(), req.params.id);
-    }
+    db.prepare('UPDATE vagas SET generated_at = ? WHERE id = ?').run(new Date().toISOString(), req.params.id);
 
     const adjScore = generateCVHTML(cv, job, req.params.id);
     res.json({ success: true, cv, adjusted_score: adjScore });
   } catch (e) {
     console.error('generate-cv error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Ler CV cacheado para revisão
+app.get('/api/jobs/:id/cv-cache', (req, res) => {
+  try {
+    const cachePath = path.join(__dirname, '..', 'data', `cv_cache_${req.params.id}.json`);
+    if (!fs.existsSync(cachePath)) {
+      return res.status(404).json({ error: 'Nenhum CV gerado ainda. Clique em "Gerar CV" primeiro.' });
+    }
+    const cv = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+    res.json({ success: true, cv });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Salvar CV revisado no cache
+app.put('/api/jobs/:id/cv-cache', (req, res) => {
+  try {
+    const cachePath = path.join(__dirname, '..', 'data', `cv_cache_${req.params.id}.json`);
+    if (!fs.existsSync(cachePath)) {
+      return res.status(404).json({ error: 'Nenhum CV gerado ainda.' });
+    }
+    const { cv } = req.body;
+    if (!cv) return res.status(400).json({ error: 'Campo cv é obrigatório' });
+    fs.writeFileSync(cachePath, JSON.stringify(cv, null, 2), 'utf8');
+    res.json({ success: true });
+  } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
@@ -290,11 +368,12 @@ app.post('/api/jobs/:id/save-cv-file', async (req, res) => {
       const cvData = typeof req.body.cv_json === 'string' ? JSON.parse(req.body.cv_json) : req.body.cv_json;
       cv = cvGenerator.generateFromData(cvData, job);
     } else {
+      const jobText = row.requisitos || row.job_text || '';
       const job = {
-        required_skills: safeJson(row.required_skills),
-        nice_to_have_skills: safeJson(row.nice_to_have_skills),
-        tools: safeJson(row.tools),
-        ats_keywords: safeJson(row.ats_keywords)
+        required_skills: skillExpander.expand(safeJson(row.required_skills), jobText),
+        nice_to_have_skills: skillExpander.expand(safeJson(row.nice_to_have_skills), jobText),
+        tools: skillExpander.expand(safeJson(row.tools), jobText),
+        ats_keywords: skillExpander.expand(safeJson(row.ats_keywords), jobText)
       };
       cv = await cvGenerator.generateForJob(job);
     }
@@ -453,15 +532,18 @@ function extractJson(raw) {
 // Extrair vaga com Ollama e salvar
 app.post('/api/extract', async (req, res) => {
   try {
-    const { job_text } = req.body;
-    if (!job_text) return res.status(400).json({ error: 'Campo job_text é obrigatório' });
+    const { empresa_context, requisitos, job_text } = req.body;
+    const requisitosText = requisitos || job_text || '';
+    if (!requisitosText) return res.status(400).json({ error: 'Campo requisitos é obrigatório' });
+
+    const fullText = [empresa_context, requisitosText].filter(Boolean).join('\n\n---\n\n');
 
     const extractPrompt = `Você é um extrator especializado em vagas de emprego para Product Design e UX.
 Analise o texto da vaga abaixo e extraia TODAS as informações no formato JSON exato especificado.
 Seja EXAUSTIVO na extração de skills — não omita nenhuma competência mencionada na vaga.
 
 [TEXTO DA VAGA]
-${job_text}
+${requisitosText}
 
 [REGRAS DE EXTRAÇÃO]
 1. required_skills: Liste TODAS as competências, habilidades e experiências que a vaga descreve como necessárias ou obrigatórias. Inclua: metodologias (discovery, delivery, pesquisa, entrevistas, mapeamento de jornadas), soft skills (comunicação, autonomia, colaboração), contextos (B2B, SaaS, sistemas financeiros, fluxos complexos) e qualquer outra habilidade explicitamente exigida. Mínimo de 8 itens.
@@ -488,21 +570,28 @@ ${job_text}
     const raw = await callOllama(extractPrompt);
     const v = extractJson(raw);
 
+    v.required_skills = skillExpander.expand(v.required_skills || [], requisitosText);
+    v.nice_to_have_skills = skillExpander.expand(v.nice_to_have_skills || [], requisitosText);
+    v.tools = skillExpander.expand(v.tools || [], requisitosText);
+    v.ats_keywords = skillExpander.expand(v.ats_keywords || [], requisitosText);
+
     const match = matcher.run(v);
     const matchingScore = match.score;
 
     const result = db.prepare(`INSERT INTO vagas
       (job_title, company, seniority, experience_years_min, location,
        required_skills, nice_to_have_skills, responsibilities, tools, ats_keywords,
-       job_text, matching_score)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+       job_text, matching_score, empresa_context, requisitos)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
       v.job_title || null, v.company || null, v.seniority || null,
       v.experience_years_min || null, v.location || null,
       JSON.stringify(v.required_skills || []), JSON.stringify(v.nice_to_have_skills || []),
       JSON.stringify(v.responsibilities || []), JSON.stringify(v.tools || []),
       JSON.stringify(v.ats_keywords || []),
-      job_text,
-      matchingScore
+      fullText,
+      matchingScore,
+      empresa_context || null,
+      requisitosText
     );
 
     res.json({ success: true, id: result.lastInsertRowid, data: v, matching_score: matchingScore });
@@ -527,6 +616,8 @@ try { db.exec("ALTER TABLE vagas ADD COLUMN adjusted_score INTEGER"); } catch {}
 try { db.exec("ALTER TABLE vagas ADD COLUMN interview_type TEXT"); } catch {}
 try { db.exec("ALTER TABLE vagas ADD COLUMN location TEXT"); } catch {}
 try { db.exec("ALTER TABLE vagas ADD COLUMN generated_at TEXT"); } catch {}
+try { db.exec("ALTER TABLE vagas ADD COLUMN empresa_context TEXT"); } catch {}
+try { db.exec("ALTER TABLE vagas ADD COLUMN requisitos TEXT"); } catch {}
 
 // Tabela de anexos
 db.exec(`

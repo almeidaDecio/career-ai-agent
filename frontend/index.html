@@ -18,11 +18,12 @@
       </div>
     </div>
     <div class="header-actions">
-      <div class="search-wrap">
+      <button class="btn-primary" id="btnNovaVaga" style="min-width:120px">Nova Vaga</button>
+      <button class="btn-secondary" id="btnImportarCV" style="min-width:120px;margin-left:8px">Importar CV</button>
+      <div class="search-wrap" style="margin-left:12px">
         <input type="text" class="search-input" id="searchInput" placeholder="Buscar vagas...">
         <button class="search-clear hidden" id="btnClearSearch" title="Limpar busca">&times;</button>
       </div>
-      <button class="btn-primary" id="btnNovaVaga">Nova Vaga</button>
     </div>
   </header>
 
@@ -72,8 +73,10 @@
         <button class="btn-close" id="btnCloseNova">&times;</button>
       </div>
       <div class="modal-body">
-        <label for="jobText">Cole a descrição da vaga:</label>
-        <textarea id="jobText" rows="12" placeholder="Cole aqui o texto completo da vaga..."></textarea>
+        <label for="empresaContext">Contexto da Empresa <span style="color:var(--text2);font-weight:400;font-size:12px">(não será analisado pelo Ollama)</span></label>
+        <textarea id="empresaContext" rows="4" placeholder="Cole aqui o texto sobre a empresa (cultura, valores, descrição do time...)" style="margin-bottom:16px"></textarea>
+        <label for="requisitosVaga">Requisitos da Vaga</label>
+        <textarea id="requisitosVaga" rows="10" placeholder="Cole aqui os requisitos, responsabilidades e skills da vaga..."></textarea>
         <div class="attach-row">
           <label class="btn-attach" for="jobFileInput">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
@@ -87,6 +90,25 @@
       <div class="modal-footer">
         <button class="btn-secondary" id="btnCancelNova">Cancelar</button>
         <button class="btn-primary" id="btnProcessar" disabled>Processar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Importar CV Externo -->
+  <div class="modal-overlay hidden" id="modalImportarCV">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Importar CV Externo</h2>
+        <button class="btn-close" id="btnCloseImportarCV">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label for="cvExternoText">Cole o texto do seu currículo:</label>
+        <textarea id="cvExternoText" rows="16" placeholder="Cole aqui o texto completo do seu CV..."></textarea>
+        <div class="modal-status" id="formatStatus"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="btnCancelImportarCV">Cancelar</button>
+        <button class="btn-primary" id="btnFormatarCV" disabled>Formatar</button>
       </div>
     </div>
   </div>

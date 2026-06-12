@@ -125,10 +125,57 @@ function moveJob(id, newStatus) {
   loadJobs();
 }
 
+// Importar CV Externo
+document.getElementById('btnImportarCV').addEventListener('click', () => {
+  document.getElementById('modalImportarCV').classList.remove('hidden');
+  document.getElementById('cvExternoText').value = '';
+  document.getElementById('formatStatus').textContent = '';
+  document.getElementById('btnFormatarCV').disabled = true;
+});
+document.getElementById('btnCloseImportarCV').addEventListener('click', () =>
+  document.getElementById('modalImportarCV').classList.add('hidden'));
+document.getElementById('btnCancelImportarCV').addEventListener('click', () =>
+  document.getElementById('modalImportarCV').classList.add('hidden'));
+document.getElementById('modalImportarCV').addEventListener('click', e => {
+  if (e.target === e.currentTarget)
+    document.getElementById('modalImportarCV').classList.add('hidden');
+});
+document.getElementById('cvExternoText').addEventListener('input', e => {
+  document.getElementById('btnFormatarCV').disabled = e.target.value.trim().length < 50;
+});
+document.getElementById('btnFormatarCV').addEventListener('click', async () => {
+  const text = document.getElementById('cvExternoText').value.trim();
+  const statusEl = document.getElementById('formatStatus');
+  const btn = document.getElementById('btnFormatarCV');
+  btn.disabled = true; statusEl.className = 'modal-status loading';
+  statusEl.innerHTML = '<span class="spinner"></span> Processando com Ollama...';
+  try {
+    const r = await fetch(`${API}/api/cv/format`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cv_text: text })
+    });
+    const result = await r.json();
+    if (result.success) {
+      statusEl.className = 'modal-status success';
+      statusEl.textContent = '✅ CV formatado!';
+      document.getElementById('modalImportarCV').classList.add('hidden');
+      window.open(`${API}${result.url}`, '_blank');
+    } else {
+      statusEl.className = 'modal-status error';
+      statusEl.textContent = `❌ ${result.error}`;
+    }
+  } catch (e) {
+    statusEl.className = 'modal-status error';
+    statusEl.textContent = `❌ Erro de conexão: ${e.message}`;
+  }
+  btn.disabled = false;
+});
+
 // Nova Vaga
 document.getElementById('btnNovaVaga').addEventListener('click', () => {
   document.getElementById('modalNovaVaga').classList.remove('hidden');
-  document.getElementById('jobText').value = '';
+  document.getElementById('empresaContext').value = '';
+  document.getElementById('requisitosVaga').value = '';
   document.getElementById('extractStatus').textContent = '';
   document.getElementById('btnProcessar').disabled = true;
 });
@@ -138,12 +185,13 @@ document.getElementById('btnCloseNova').addEventListener('click', () =>
 document.getElementById('btnCancelNova').addEventListener('click', () =>
   document.getElementById('modalNovaVaga').classList.add('hidden'));
 
-document.getElementById('jobText').addEventListener('input', e => {
+document.getElementById('requisitosVaga').addEventListener('input', e => {
   document.getElementById('btnProcessar').disabled = e.target.value.trim().length < 20;
 });
 
 document.getElementById('btnProcessar').addEventListener('click', async () => {
-  const text = document.getElementById('jobText').value.trim();
+  const empresa = document.getElementById('empresaContext').value.trim();
+  const requisitos = document.getElementById('requisitosVaga').value.trim();
   const statusEl = document.getElementById('extractStatus');
   const btn = document.getElementById('btnProcessar');
   btn.disabled = true; statusEl.className = 'modal-status loading';
@@ -151,7 +199,7 @@ document.getElementById('btnProcessar').addEventListener('click', async () => {
   try {
     const r = await fetch(`${API}/api/extract`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ job_text: text })
+      body: JSON.stringify({ empresa_context: empresa, requisitos })
     });
     const result = await r.json();
     if (result.success) {
@@ -177,7 +225,7 @@ document.getElementById('jobFileInput').addEventListener('change', async (e) => 
   document.getElementById('attachName').textContent = file.name;
   if (file.type === 'text/plain') {
     const text = await file.text();
-    const ta = document.getElementById('jobText');
+    const ta = document.getElementById('requisitosVaga');
     if (!ta.value.trim()) ta.value = text;
     document.getElementById('btnProcessar').disabled = ta.value.trim().length < 20;
     return;
@@ -284,6 +332,93 @@ async function exportPdf(id) {
   }
 }
 
+let _reviewBodyBackup = '';
+
+async function openReviewCV(id) {
+  try {
+    const r = await fetch(`${API}/api/jobs/${id}/cv-cache`);
+    const data = await r.json();
+    if (!data.success) {
+      showToast(data.error || 'Nenhum CV gerado ainda.');
+      return;
+    }
+    const cv = data.cv;
+    const body = document.getElementById('detailBody');
+    _reviewBodyBackup = body.innerHTML;
+
+    const sfExp = cv.experience.find(e => e.company.toLowerCase().includes('softfocus'));
+
+    body.innerHTML = `
+      <div style="margin-bottom:16px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:12px">Revisar CV</div>
+
+        <label style="font-size:11px;color:var(--text2);margin-bottom:4px;display:block">Resumo</label>
+        <textarea id="cvReviewSummary" rows="4" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px;resize:vertical;margin-bottom:12px">${escapeHtml(cv.summary)}</textarea>
+
+        <label style="font-size:11px;color:var(--text2);margin-bottom:4px;display:block">Skills (uma por linha)</label>
+        <textarea id="cvReviewSkills" rows="6" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px;resize:vertical;margin-bottom:12px">${cv.skills_ordered.map(escapeHtml).join('\n')}</textarea>
+
+        ${sfExp ? `
+        <label style="font-size:11px;color:var(--text2);margin-bottom:4px;display:block">Entregas Softfocus (uma por linha)</label>
+        <textarea id="cvReviewHighlights" rows="8" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px;resize:vertical;margin-bottom:12px">${sfExp.highlights.map(escapeHtml).join('\n')}</textarea>
+
+        <label style="font-size:11px;color:var(--text2);margin-bottom:4px;display:block">Resultados Softfocus</label>
+        <textarea id="cvReviewResultados" rows="3" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px;resize:vertical;margin-bottom:12px">${escapeHtml(sfExp.resultados || '')}</textarea>
+        ` : ''}
+
+        <div style="display:flex;gap:8px;margin-top:16px">
+          <button class="btn-secondary" onclick="closeReviewCV()" style="flex:1">Voltar</button>
+          <button class="btn-primary" onclick="saveReviewCV(${id})" style="flex:1">Salvar</button>
+        </div>
+      </div>
+    `;
+  } catch (e) {
+    showToast('Erro ao carregar CV para revisão.');
+  }
+}
+
+function closeReviewCV() {
+  const body = document.getElementById('detailBody');
+  if (_reviewBodyBackup) body.innerHTML = _reviewBodyBackup;
+}
+
+async function saveReviewCV(id) {
+  try {
+    const r = await fetch(`${API}/api/jobs/${id}/cv-cache`);
+    const data = await r.json();
+    if (!data.success) { showToast('Erro ao carregar CV'); return; }
+    const cv = data.cv;
+
+    cv.summary = document.getElementById('cvReviewSummary').value.trim();
+    cv.skills_ordered = document.getElementById('cvReviewSkills').value.split('\n').map(s => s.trim()).filter(Boolean);
+
+    const sfExp = cv.experience.find(e => e.company.toLowerCase().includes('softfocus'));
+    if (sfExp) {
+      const highlightsEl = document.getElementById('cvReviewHighlights');
+      if (highlightsEl) {
+        sfExp.highlights = highlightsEl.value.split('\n').map(s => s.trim()).filter(Boolean);
+      }
+      const resultadosEl = document.getElementById('cvReviewResultados');
+      if (resultadosEl) sfExp.resultados = resultadosEl.value.trim();
+    }
+
+    const saveR = await fetch(`${API}/api/jobs/${id}/cv-cache`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cv })
+    });
+    const saveData = await saveR.json();
+    if (saveData.success) {
+      showToast('CV salvo com sucesso!');
+      closeReviewCV();
+    } else {
+      showToast('Erro ao salvar: ' + saveData.error);
+    }
+  } catch (e) {
+    showToast('Erro ao salvar CV.');
+  }
+}
+
 async function saveJobDetail(id) {
   const genBtn = document.getElementById('btnGenerateCV');
   if (genBtn && genBtn.disabled) {
@@ -358,6 +493,10 @@ async function openDetail(id) {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Exportar PDF
       </button>
+      <button class="btn-action-secondary" id="btnReviewCV" onclick="openReviewCV(${job.id})">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        Revisar CV
+      </button>
     `;
   }
 
@@ -371,7 +510,7 @@ async function openDetail(id) {
     ${genAt ? `
     <div class="detail-gen-info">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      <span>Primeiro CV gerado em <strong>${genAt}</strong></span>
+      <span>CV gerado em <strong>${genAt}</strong></span>
     </div>
     <hr class="side-panel-rule">
     ` : ''}
@@ -521,31 +660,33 @@ async function openDetail(id) {
       </div>
     </div>
 
-    <!-- Anexos -->
     <div style="margin-top:20px">
-      <h4 style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;gap:8px">
-        Anexos
-        <label class="btn-attach-sm" for="attachInput">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Adicionar
-        </label>
-        <input type="file" id="attachInput" multiple
-          accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
-          style="display:none"
-          onchange="uploadAttachments(${job.id}, this)">
-      </h4>
-      <div id="attachList" class="attach-list">
+      <label class="btn-attach-sm" for="attachInput" style="font-size:12px;padding:6px 12px;border-radius:6px;border:1px solid var(--border);display:inline-flex;align-items:center;gap:6px;cursor:pointer;color:var(--text);background:var(--bg)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        Adicionar anexo
+      </label>
+      <input type="file" id="attachInput" multiple
+        accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
+        style="display:none"
+        onchange="uploadAttachments(${job.id}, this)">
+      <div id="attachList" class="attach-list" style="margin-top:10px">
         <div class="attach-loading">Carregando...</div>
       </div>
     </div>
 
-    ${job.job_text ? `
+    ${job.job_text || job.requisitos ? `
     <div style="margin-top:20px">
       <h4 style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin-bottom:8px">Texto da Vaga</h4>
       <button class="job-text-toggle" id="jobTextToggle" onclick="toggleJobText()">
         <span class="arrow">&#9654;</span> Clique para ler o texto completo
       </button>
-      <div class="job-text-content" id="jobTextContent">${escapeHtml(job.job_text)}</div>
+      <div class="job-text-content" id="jobTextContent">
+        ${job.empresa_context ? `<div style="margin-bottom:12px"><strong style="font-size:12px;color:var(--text)">Sobre a Empresa</strong>
+${escapeHtml(job.empresa_context)}</div>
+<hr style="margin:12px 0;border:none;border-top:1px solid var(--border)">
+<div><strong style="font-size:12px;color:var(--text)">Requisitos da Vaga</strong>
+${escapeHtml(job.requisitos || job.job_text)}</div>` : escapeHtml(job.job_text || job.requisitos)}
+      </div>
     </div>
     ` : ''}
 
@@ -667,19 +808,45 @@ async function uploadAttachments(jobId, input) {
   await loadAttachments(jobId);
 }
 
+function showConfirm(message, onConfirm) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.style.display = 'flex';
+  overlay.style.zIndex = '200';
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:380px">
+      <div class="modal-header">
+        <h2>Confirmação</h2>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:14px;line-height:1.5">${message}</p>
+      </div>
+      <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn-secondary" style="flex:1" id="_cfCancel">Cancelar</button>
+        <button class="btn-primary" style="flex:1" id="_cfOk">Ok</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#_cfCancel').onclick = () => { overlay.remove(); };
+  overlay.querySelector('#_cfOk').onclick = () => { overlay.remove(); onConfirm(); };
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+}
+
 async function deleteAttachment(attachId) {
-  if (!confirm('Remover este arquivo?')) return;
-  try {
-    const r = await fetch(`${API}/api/attachments/${attachId}`, { method: 'DELETE' });
-    const data = await r.json();
-    if (data.success) {
-      document.querySelector(`.attach-item[data-id="${attachId}"]`)?.remove();
-      const list = document.getElementById('attachList');
-      if (list && !list.querySelector('.attach-item')) {
-        list.innerHTML = '<div class="attach-empty">Nenhum arquivo anexado</div>';
+  showConfirm('Deseja remover este arquivo?', async () => {
+    try {
+      const r = await fetch(`${API}/api/attachments/${attachId}`, { method: 'DELETE' });
+      const data = await r.json();
+      if (data.success) {
+        document.querySelector(`.attach-item[data-id="${attachId}"]`)?.remove();
+        const list = document.getElementById('attachList');
+        if (list && !list.querySelector('.attach-item')) {
+          list.innerHTML = '<div class="attach-empty">Nenhum arquivo anexado</div>';
+        }
       }
-    }
-  } catch (e) { alert('Erro ao remover arquivo'); }
+    } catch (e) { alert('Erro ao remover arquivo'); }
+  });
 }
 
 // ── Plataforma custom ─────────────────────────────────

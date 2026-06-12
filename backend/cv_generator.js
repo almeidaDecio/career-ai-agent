@@ -2,6 +2,15 @@ const fs = require('fs');
 const path = require('path');
 const http = require('http');
 
+const DICT_PATH = path.join(__dirname, '..', 'dicionario_subprodutos.json');
+let dictionary = null;
+function loadDict() {
+  if (dictionary) return dictionary;
+  try { dictionary = JSON.parse(fs.readFileSync(DICT_PATH, 'utf8')); }
+  catch { dictionary = {}; }
+  return dictionary;
+}
+
 const CV_PATH = path.join(__dirname, '..', 'sample_cv.json');
 const OLLAMA_HOST = 'http://127.0.0.1:11434';
 const OLLAMA_MODEL = 'job-analyzer';
@@ -14,6 +23,11 @@ function replaceEngineering(text) {
 }
 
 // ── Métricas fixas — nunca podem ser removidas ou parafraseadas ──────────
+function escapeHtml(text) {
+  if (!text) return '';
+  return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
 const FIXED_METRICS = [
   'Mais de 50 novas telas entregues para evolução da plataforma no Figma',
   '15+ entrevistas com usuários conduzidas para novas funcionalidades e refinamento de fluxos existentes',
@@ -58,10 +72,28 @@ function detectStructuralTerms(job) {
    - NÃO usar os termos de forma isolada ou como keyword stuffing — sempre com contexto de ação.`;
 }
 
+const SYN_PATH = path.join(__dirname, '..', 'sinonimos_pt_en.json');
+let synonyms = null;
+function loadSynonyms() {
+  if (synonyms) return synonyms;
+  try { synonyms = JSON.parse(fs.readFileSync(SYN_PATH, 'utf8')); }
+  catch { synonyms = {}; }
+  return synonyms;
+}
+
+function normalizeSkill(s) {
+  let lower = s.toLowerCase().trim();
+  const dict = loadSynonyms();
+  for (const [pt, en] of Object.entries(dict)) {
+    if (lower === pt) return en;
+  }
+  return lower;
+}
+
 function sanitizeSkills(skills) {
   const seen = new Set();
   return skills.filter(s => {
-    const key = s.toLowerCase().trim();
+    const key = normalizeSkill(s);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -285,11 +317,30 @@ ${structuralTermsRule}
     }
   }
 
+  const dict = loadDict();
+  const allSubSkills = new Set();
+  for (const subs of Object.values(dict)) {
+    subs.forEach(s => allSubSkills.add(s.toLowerCase().trim()));
+  }
+  const enrichedSkills = [...base.skills_ordered];
+  const existingLower = new Set(enrichedSkills.map(s => s.toLowerCase().trim()));
+  const dictJobSkills = [
+    ...(job.required_skills || []),
+    ...(job.tools || [])
+  ];
+  for (const js of dictJobSkills) {
+    const lower = js.toLowerCase().trim();
+    if (allSubSkills.has(lower) && !existingLower.has(lower)) {
+      enrichedSkills.push(capitalizeSkill(js));
+      existingLower.add(lower);
+    }
+  }
+
   return {
     name: base.name,
     current_title: base.current_title,
     summary: finalSummary,
-    skills_ordered: base.skills_ordered,
+    skills_ordered: enrichedSkills,
     matched_skills: base.matched_skills,
     experience: finalExperience,
     education: base.education,
@@ -342,4 +393,113 @@ function generateHTML(cv, ollamaResult) {
   return outPath;
 }
 
-module.exports = { generateForJob, generateFromData, generateHTML };
+function generateExternalHTML(cv) {
+  const bullet = String.fromCharCode(8226);
+  const skillsList = Array.isArray(cv.skills_ordered) ? cv.skills_ordered : [];
+  const skillsHTML = skillsList.map(s => escapeHtml(s.trim())).filter(Boolean).join(` ${bullet} `);
+
+  const esc = escapeHtml;
+  const experienciaHTML = (cv.experience || []).map(exp => {
+    const highlights = (exp.highlights || []).filter(Boolean);
+    const skills = (exp.skills || []).filter(Boolean).map(esc).join(' · ');
+    return `
+    <div class="job">
+      <div class="job-header">
+        <div class="job-company">${esc(exp.company) || '—'}</div>
+        ${exp.period ? `<div class="job-period">${esc(exp.period)}</div>` : exp.years ? `<div class="job-period">${exp.years} anos</div>` : ''}
+      </div>
+      <div class="job-role">${esc(exp.role) || ''}</div>
+      ${exp.domain ? `<p class="job-desc" style="margin-bottom:8px">${esc(exp.domain)}</p>` : ''}
+      ${highlights.length ? `<ul class="bullet-list">${highlights.map(h => `<li>${esc(h)}</li>`).join('\n        ')}</ul>` : ''}
+      ${skills ? `<div class="job-skills">${skills}</div>` : ''}
+    </div>`;
+  }).join('\n    <hr class="rule">\n');
+
+  const formacaoHTML = (cv.education || []).map(edu => `
+    <div class="edu-item">
+      <div class="edu-degree">${esc(edu.degree) || '—'}</div>
+      <div class="edu-school">${esc(edu.institution || '')}${edu.year ? ` · ${edu.year}` : ''}</div>
+    </div>
+  `).join('\n      ');
+
+  const idiomasHTML = (cv.languages || []).map(lang =>
+    `<div class="cert-item">${esc(lang.language)} — ${esc(lang.level)}</div>`
+  ).join('\n      ');
+
+  const certsHTML = (cv.certifications || []).map(cert =>
+    `<div class="cert-item">${esc(cert.name)}${cert.institution ? ` <span>${esc(cert.institution)}${cert.year ? ` · ${cert.year}` : ''}</span>` : ''}</div>`
+  ).join('\n      ');
+
+  const contactsHTML = [
+    cv.email && `<a href="mailto:${esc(cv.email)}" class="contact-item">${esc(cv.email)}</a>`,
+    cv.phone && `<a href="tel:${esc(cv.phone)}" class="contact-item">${esc(cv.phone)}</a>`,
+    cv.linkedin && `<a href="${esc(cv.linkedin)}" class="contact-item">${esc(cv.linkedin)}</a>`,
+    cv.portfolio && `<a href="${esc(cv.portfolio)}" class="contact-item">${esc(cv.portfolio)}</a>`
+  ].filter(Boolean).join('\n      ');
+
+  const styleCSS = fs.readFileSync(path.join(__dirname, 'cv_template.html'), 'utf8');
+  const style = styleCSS.substring(styleCSS.indexOf('<style>'), styleCSS.indexOf('</style>') + 7);
+
+  const bodyHTML = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${esc(cv.name || 'Currículo')}</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+${style}
+</head>
+<body>
+<div class="page">
+
+  <header class="header">
+    <div class="header-name">${esc(cv.name) || 'Currículo'}</div>
+    <div class="header-title">${esc(cv.current_title) || ''}</div>
+    ${contactsHTML ? `<div class="contacts">${contactsHTML}</div>` : ''}
+  </header>
+
+  <section class="section">
+    <div class="section-title">Perfil Profissional</div>
+    <p class="summary">${esc(cv.summary) || '—'}</p>
+  </section>
+
+  ${skillsHTML ? `<section class="section">
+    <div class="section-title">Competências</div>
+    <p class="summary">${skillsHTML}</p>
+  </section>` : ''}
+
+  ${experienciaHTML ? `<section class="section">
+    <div class="section-title">Experiência Profissional</div>
+    ${experienciaHTML}
+  </section>` : ''}
+
+  ${formacaoHTML ? `<section class="section">
+    <div class="section-title">Formação Acadêmica</div>
+    <div class="edu-grid">${formacaoHTML}</div>
+  </section>` : ''}
+
+  ${idiomasHTML ? `<section class="section">
+    <div class="section-title">Idiomas</div>
+    <div class="cert-list">${idiomasHTML}</div>
+  </section>` : ''}
+
+  ${certsHTML ? `<section class="section">
+    <div class="section-title">Certificações</div>
+    <div class="cert-list">${certsHTML}</div>
+  </section>` : ''}
+
+</div>
+<script>window.onload = function () {
+  if (window.location.search.includes('print=true')) setTimeout(function () { window.print(); }, 500);
+};<\/script>
+</body>
+</html>`;
+
+  const publicDir = path.join(__dirname, '..', 'public');
+  if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
+  const outPath = path.join(publicDir, 'cv_externo.html');
+  fs.writeFileSync(outPath, bodyHTML, 'utf8');
+  return outPath;
+}
+
+module.exports = { generateForJob, generateFromData, generateHTML, generateExternalHTML };

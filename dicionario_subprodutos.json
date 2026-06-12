@@ -1,0 +1,178 @@
+{
+  "Figma": [
+    "Auto Layout",
+    "Variants (Figma)",
+    "Constraints (Figma)",
+    "Componentes (Figma)",
+    "UI Kit",
+    "Design Tokens",
+    "Component Properties (Figma)",
+    "Bibliotecas compartilhadas (Figma)"
+  ],
+  "Design System": [
+    "Componentes reutilizáveis",
+    "Tokens (Design System)",
+    "Atomic Design",
+    "UI Kit"
+  ],
+  "UX Research": [
+    "Entrevistas com usuários",
+    "Testes de usabilidade",
+    "Card sorting (pesquisa)",
+    "Benchmark (UX)",
+    "Análise heurística",
+    "Persona (UX)",
+    "A/B teste (UX)"
+  ],
+  "Pesquisa": [
+    "Entrevistas com usuários",
+    "Testes de usabilidade",
+    "Card sorting (pesquisa)",
+    "Benchmark (UX)",
+    "Análise heurística",
+    "Persona (UX)",
+    "A/B teste (UX)"
+  ],
+  "Metodologias Ágeis": [
+    "Sprint (Agile)",
+    "Backlog (Agile)",
+    "Kanban",
+    "Squad (Agile)",
+    "Refinamento (Agile)"
+  ],
+  "Agile": [
+    "Sprint (Agile)",
+    "Backlog (Agile)",
+    "Kanban",
+    "Squad (Agile)",
+    "Refinamento (Agile)"
+  ],
+  "Prototipação": [
+    "Alta fidelidade",
+    "Baixa fidelidade",
+    "Wireframe",
+    "Protótipo interativo",
+    "Fluxo navegável"
+  ],
+  "Interaction Design": [
+    "Microinterações",
+    "Animações",
+    "Estados de componente (Figma)",
+    "Feedback visual"
+  ],
+  "Design de Interação": [
+    "Microinterações",
+    "Animações",
+    "Estados de componente (Figma)",
+    "Feedback visual"
+  ],
+  "User Flow": [
+    "Mapa de jornada",
+    "Blueprint de serviço",
+    "Sitemap",
+    "Arquitetura de informação"
+  ],
+  "Product Discovery": [
+    "Double Diamond",
+    "Jobs to be Done",
+    "Problem framing",
+    "Lean Inception"
+  ],
+  "Discovery": [
+    "Double Diamond",
+    "Jobs to be Done",
+    "Problem framing",
+    "Lean Inception"
+  ],
+  "UI Design": [
+    "Grid",
+    "Tipografia",
+    "Responsivo",
+    "Mobile first",
+    "Acessibilidade",
+    "WCAG"
+  ],
+  "Handoff": [
+    "Redline",
+    "Zeplin",
+    "Dev mode Figma",
+    "Design Tokens",
+    "CSS"
+  ],
+  "Passagem para dev": [
+    "Redline",
+    "Zeplin",
+    "Dev mode Figma",
+    "Design Tokens",
+    "CSS"
+  ],
+  "Acessibilidade": [
+    "WCAG",
+    "ARIA",
+    "Leitores de tela",
+    "Navegação por teclado",
+    "Contraste"
+  ],
+  "Design Thinking": [
+    "Empatia",
+    "Ideação",
+    "HMW",
+    "Crazy 8s",
+    "Brainstorming"
+  ],
+  "Design Sprint": [
+    "Mapa (Design Sprint)",
+    "Esboço (Design Sprint)",
+    "Decisão (Design Sprint)",
+    "Protótipo (Design Sprint)",
+    "Teste (Design Sprint)",
+    "Google Ventures"
+  ],
+  "Métricas": [
+    "NPS",
+    "CSAT",
+    "Taxa de conversão",
+    "Hotjar",
+    "Mixpanel"
+  ],
+  "Dados": [
+    "NPS",
+    "CSAT",
+    "Taxa de conversão",
+    "Hotjar",
+    "Mixpanel"
+  ],
+  "B2B": [
+    "Dashboard",
+    "Fluxos complexos",
+    "Múltiplos perfis de usuário",
+    "Onboarding"
+  ],
+  "SaaS": [
+    "Dashboard",
+    "Fluxos complexos",
+    "Múltiplos perfis de usuário",
+    "Onboarding"
+  ],
+  "Fintech": [
+    "Compliance (financeiro)",
+    "Fluxo de pagamento",
+    "KYC",
+    "Autenticação (digital)",
+    "Open finance"
+  ],
+  "Financeiro": [
+    "Compliance (financeiro)",
+    "Fluxo de pagamento",
+    "KYC",
+    "Autenticação (digital)",
+    "Open finance"
+  ],
+  "Banco": [
+    "Compliance (financeiro)",
+    "Fluxo de pagamento",
+    "KYC",
+    "Autenticação (digital)",
+    "Open finance"
+  ]
+}
