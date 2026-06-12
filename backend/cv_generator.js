@@ -208,13 +208,16 @@ ${JSON.stringify(job, null, 2)}
 ${cv.summary}
 [EXPERIÊNCIA SOFTFOCUS ORIGINAL]
 ${softfocusText}
-[REGRAS E DIRETRIZES DE ESCRITA (CRÍTICO)]
-1. COMPRIMENTO DO RESUMO: O resumo profissional deve ter de 2 a 3 parágrafos de texto corrido. Deve obrigatoriamente mencionar a trajetória de mais de 30 anos iniciada no design gráfico, destacando a precisão visual, e a transição bem-sucedida para o Product Design com foco em usabilidade e negócios.
-2. NÃO faça "keyword stuffing" (não empilhe palavras-chave soltas).
-3. PARALELISMO OBRIGATÓRIO NA SOFTFOCUS: Inicie TODOS os tópicos de atividades com substantivos de ação (ex: "Desenvolvimento...", "Condução...", "Estruturação...", "Colaboração...", "Concepção e projeto...", "Documentação..."). Nunca use verbos no infinitivo como "Conduzir".
-4. Mantenha exatamente de 6 a 8 bullets na Softfocus, adaptando as atividades originais do candidato.
-5. Mantenha as datas e dados quantitativos intactos.
-6. REGRA OBRIGATÓRIA — RESULTADOS QUANTITATIVOS DA SOFTFOCUS:
+[REGRAS DE ESCRITA PARA ATS — CRÍTICO]
+1. COMPRIMENTO DO RESUMO: 2 a 3 parágrafos. Mencione a trajetória de mais de 30 anos iniciada no design gráfico, a transição para Product Design, e destaque precisão visual, usabilidade e negócios.
+2. NÃO use adjetivos genéricos de autopromoção: "alta performance", "fora da curva", "acima da média", "excepcional", "diferenciado", "referência", "visionário", "completo", "multifuncional", "proativo", "resiliente", "focado em resultados". Prefira evidência concreta.
+3. NÃO use frases de intenção vazia: "Busco novos desafios", "em busca de oportunidades", "apaixonado por...", "focado em crescimento".
+4. NÃO use "Responsável por", "apoio em", "atuo com", "participação em". Use verbos fortes de entrega: implementei, reduzi, aumentei, otimizei, estruturei, liderei, automatizei, entreguei, desenvolvi, projetei, conduzi, colaborei, documentei.
+5. Estrutura obrigatória para bullets: verbo forte + resultado + ferramenta + contexto. Ex: "Desenvolvi protótipos de alta fidelidade no Figma que antecipavam decisões e reduziam retrabalho em sprint."
+6. PARALELISMO OBRIGATÓRIO NA SOFTFOCUS: Inicie TODOS os bullets com verbos no passado (ex: "Desenvolvi...", "Conduzi...", "Estruturei...", "Colaborei..."). Nunca use substantivos de ação como "Desenvolvimento..." ou verbos no infinitivo.
+7. Mantenha exatamente de 6 a 8 bullets na Softfocus.
+8. Mantenha as datas e dados quantitativos intactos.
+9. REGRA OBRIGATÓRIA — RESULTADOS QUANTITATIVOS DA SOFTFOCUS:
    Os bullets abaixo DEVEM aparecer nos softfocus_entregas_ajustadas
    EXATAMENTE como estão escritos. Não resuma, não parafraseie,
    não substitua números por palavras, não use "significativo"
@@ -228,7 +231,7 @@ ${softfocusText}
    NÃO inclua esses bullets nos softfocus_entregas_ajustadas — eles serão adicionados automaticamente.
    NÃO inicie nenhum bullet com •, -, – ou *. Retorne apenas o texto limpo em cada item do array.
 ${structuralTermsRule}
-7. A saída DEVE ser estritamente no formato JSON abaixo, sem qualquer texto introdutório ou explicativo:
+10. A saída DEVE ser estritamente no formato JSON abaixo, sem qualquer texto introdutório ou explicativo:
 {
   "resumo_ajustado": "Texto...",
   "softfocus_cargo": "Product Designer",
@@ -315,6 +318,27 @@ ${structuralTermsRule}
         finalSummary = ollamaResult.resumo_ajustado;
       }
     }
+  }
+
+  // Pós-processamento: limpar padrões fracos que o Ollama eventualmente ainda gere
+  if (ollamaResult?.softfocus_entregas_ajustadas) {
+    ollamaResult.softfocus_entregas_ajustadas = ollamaResult.softfocus_entregas_ajustadas
+      .map(b => {
+        if (!b) return b;
+        let t = b;
+        // Substituir "responsável por" -> verbo forte genérico
+        t = t.replace(/\bRespons[áa]vel por\b/i, 'Estruturei e executei');
+        t = t.replace(/\bApoio[uo]? (em|na|no|nas|nos)\b/i, 'Colaborei em');
+        t = t.replace(/\bParticipa[cç][ãa]o (em|na|no|nas|nos)\b/i, 'Contribuí em');
+        t = t.replace(/\bAtu[oi] (com|em|na|no|nas|nos)\b/i, 'Trabalhei em');
+        t = t.replace(/\bEra respons[áa]vel por\b/i, 'Estruturei');
+        t = t.replace(/\bAtuava\b/i, 'Atuei');
+        // Remover adjetivos genéricos isolados
+        t = t.replace(/\b(alta performance|fora da curva|acima da m[ée]dia|excepcional|diferenciado|refer[êe]ncia|vision[áa]rio|completo|multifuncional|proativo|resiliente|focado em resultados?|apaixonado)\b/gi, '').replace(/\s{2,}/g, ' ').trim();
+        return t;
+      })
+      .filter(Boolean)
+      .filter(b => b.length > 10);
   }
 
   const dict = loadDict();
@@ -456,6 +480,7 @@ ${style}
     <div class="header-name">${esc(cv.name) || 'Currículo'}</div>
     <div class="header-title">${esc(cv.current_title) || ''}</div>
     ${contactsHTML ? `<div class="contacts">${contactsHTML}</div>` : ''}
+    <div style="font-size:11.5px;color:var(--ink-light);margin-top:8px">Porecatu – PR (Disponível para atuação Remota ou Híbrida em Maringá/Londrina e região)</div>
   </header>
 
   <section class="section">
