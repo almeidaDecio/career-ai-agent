@@ -1,11 +1,13 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AjustaCV</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="ds/tokens.css">
+  <link rel="stylesheet" href="ds/base.css">
+  <link rel="stylesheet" href="ds/components.css">
+  <link rel="stylesheet" href="ds/themes.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -18,8 +20,8 @@
       </div>
     </div>
     <div class="header-actions">
-      <button class="btn-primary" id="btnNovaVaga" style="min-width:120px">Nova Vaga</button>
-      <button class="btn-secondary" id="btnImportarCV" style="min-width:120px;margin-left:8px">Importar CV</button>
+      <button class="btn btn--primary" id="btnNovaVaga" style="min-width:120px">Nova Vaga</button>
+      <button class="btn btn--ghost" id="btnImportarCV" style="min-width:120px;margin-left:8px">Importar CV</button>
       <div class="search-wrap" style="margin-left:12px">
         <input type="text" class="search-input" id="searchInput" placeholder="Buscar vagas...">
         <button class="search-clear hidden" id="btnClearSearch" title="Limpar busca">&times;</button>
@@ -67,13 +69,13 @@
 
   <!-- Modal Nova Vaga -->
   <div class="modal-overlay hidden" id="modalNovaVaga">
-    <div class="modal">
-      <div class="modal-header">
+    <div class="modal dialog">
+      <div class="modal-header dialog__header">
         <h2>Nova Vaga</h2>
-        <button class="btn-close" id="btnCloseNova">&times;</button>
+        <button class="btn-close dialog__close" id="btnCloseNova">&times;</button>
       </div>
-      <div class="modal-body">
-        <label for="empresaContext">Contexto da Empresa <span style="color:var(--text2);font-weight:400;font-size:12px">(não será analisado pelo Ollama)</span></label>
+      <div class="modal-body dialog__body">
+        <label for="empresaContext">Contexto da Empresa <span style="color:var(--color-text-secondary);font-weight:400;font-size:12px">(não será analisado pelo Ollama)</span></label>
         <textarea id="empresaContext" rows="4" placeholder="Cole aqui o texto sobre a empresa (cultura, valores, descrição do time...)" style="margin-bottom:16px"></textarea>
         <label for="requisitosVaga">Requisitos da Vaga</label>
         <textarea id="requisitosVaga" rows="10" placeholder="Cole aqui os requisitos, responsabilidades e skills da vaga..."></textarea>
@@ -87,74 +89,74 @@
         </div>
         <div class="modal-status" id="extractStatus"></div>
       </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" id="btnCancelNova">Cancelar</button>
-        <button class="btn-primary" id="btnProcessar" disabled>Processar</button>
+      <div class="modal-footer dialog__footer">
+        <button class="btn btn--ghost" id="btnCancelNova">Cancelar</button>
+        <button class="btn btn--primary" id="btnProcessar" disabled>Processar</button>
       </div>
     </div>
   </div>
 
   <!-- Modal Importar CV Externo -->
   <div class="modal-overlay hidden" id="modalImportarCV">
-    <div class="modal">
-      <div class="modal-header">
+    <div class="modal dialog">
+      <div class="modal-header dialog__header">
         <h2>Importar CV Externo</h2>
-        <button class="btn-close" id="btnCloseImportarCV">&times;</button>
+        <button class="btn-close dialog__close" id="btnCloseImportarCV">&times;</button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body dialog__body">
         <label for="cvExternoText">Cole o texto do seu currículo:</label>
         <textarea id="cvExternoText" rows="16" placeholder="Cole aqui o texto completo do seu CV..."></textarea>
         <div class="modal-status" id="formatStatus"></div>
       </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" id="btnCancelImportarCV">Cancelar</button>
-        <button class="btn-primary" id="btnFormatarCV" disabled>Formatar</button>
+      <div class="modal-footer dialog__footer">
+        <button class="btn btn--ghost" id="btnCancelImportarCV">Cancelar</button>
+        <button class="btn btn--primary" id="btnFormatarCV" disabled>Formatar</button>
       </div>
     </div>
   </div>
 
   <!-- Modal Confirmar Exclusão -->
   <div class="modal-overlay hidden" id="modalConfirm">
-    <div class="modal" style="max-width:380px">
-      <div class="modal-header">
+    <div class="modal dialog" style="max-width:380px">
+      <div class="modal-header dialog__header">
         <h2>Excluir vaga</h2>
-        <button class="btn-close" id="btnCloseConfirm">&times;</button>
+        <button class="btn-close dialog__close" id="btnCloseConfirm">&times;</button>
       </div>
-      <div class="modal-body">
-        <p style="font-size:14px;line-height:1.5">Tem certeza que deseja excluir esta vaga?</p>
+      <div class="modal-body dialog__body">
+        <p style="font-size:var(--font-sm-size);line-height:1.5">Tem certeza que deseja excluir esta vaga?</p>
       </div>
-      <div class="modal-footer confirm-footer">
-        <button class="btn-secondary btn-eq" id="btnCancelConfirm">Cancelar</button>
-        <button class="btn-danger btn-eq" id="btnConfirmDelete">Excluir</button>
+      <div class="modal-footer dialog__footer confirm-footer">
+        <button class="btn btn--ghost btn-eq" id="btnCancelConfirm">Cancelar</button>
+        <button class="btn btn--danger btn-eq" id="btnConfirmDelete">Excluir</button>
       </div>
     </div>
   </div>
 
   <!-- Modal Erro -->
   <div class="modal-overlay hidden" id="modalError">
-    <div class="modal" style="max-width:420px">
-      <div class="modal-header">
+    <div class="modal dialog" style="max-width:420px">
+      <div class="modal-header dialog__header">
         <h2>Erro</h2>
-        <button class="btn-close" id="btnCloseError">&times;</button>
+        <button class="btn-close dialog__close" id="btnCloseError">&times;</button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body dialog__body">
         <div style="display:flex;gap:12px;align-items:flex-start">
-          <div style="width:36px;height:36px;border-radius:50%;background:rgba(239,68,68,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--red);font-size:18px">!</div>
+          <div style="width:36px;height:36px;border-radius:50%;background:rgba(239,68,68,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--color-error);font-size:18px">!</div>
           <div>
-            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px" id="errorTitle">Algo deu errado</div>
-            <div style="font-size:12px;line-height:1.5;color:var(--text2)" id="errorMessage">Tente novamente.</div>
-            <div style="font-size:11px;margin-top:8px;padding:6px 10px;background:var(--bg);border-radius:6px;color:var(--text2);font-family:monospace;display:none" id="errorContext"></div>
+            <div style="font-size:13px;font-weight:600;color:var(--color-text-primary);margin-bottom:4px" id="errorTitle">Algo deu errado</div>
+            <div style="font-size:12px;line-height:1.5;color:var(--color-text-secondary)" id="errorMessage">Tente novamente.</div>
+            <div style="font-size:11px;margin-top:8px;padding:6px 10px;background:var(--color-surface-tertiary);border-radius:6px;color:var(--color-text-secondary);font-family:monospace;display:none" id="errorContext"></div>
           </div>
         </div>
       </div>
-      <div class="modal-footer" style="justify-content:flex-end">
-        <button class="btn-primary" id="btnCloseError" style="padding:8px 24px">Ok</button>
+      <div class="modal-footer dialog__footer" style="justify-content:flex-end">
+        <button class="btn btn--primary" id="btnCloseError">Ok</button>
       </div>
     </div>
   </div>
 
   <div class="toast-container hidden" id="toastContainer">
-    <div class="toast" id="toastMessage">Nenhum CV gerado ainda. Clique em "Gerar CV" primeiro.</div>
+    <div class="toast toast--info" id="toastMessage">Nenhum CV gerado ainda. Clique em "Gerar CV" primeiro.</div>
   </div>
 
   <!-- Side Panel Detalhes da Vaga -->

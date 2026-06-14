@@ -1,0 +1,77 @@
+/* ============================================================
+   BASE — RESET + ESTILOS BASE
+   ============================================================
+   O base.css elimina inconsistências dos browsers e define
+   estilos padrão para elementos HTML.
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-family-primary);
+  font-size: var(--font-base-size);
+  line-height: var(--font-base-height);
+  color: var(--color-text-primary);
+  background-color: var(--color-surface-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+img, svg, video {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: var(--color-brand-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--color-brand-hover);
+  text-decoration: underline;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+input, textarea, select {
+  font: inherit;
+  color: inherit;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: var(--font-2xl-weight);
+  line-height: var(--font-2xl-height);
+  overflow-wrap: break-word;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--color-border-default);
+}

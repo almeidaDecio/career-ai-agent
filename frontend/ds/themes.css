@@ -1,0 +1,174 @@
+/* ============================================================
+   THEMES — Dark/Light mode + Multi-brand
+   ============================================================
+   O tema claro (default) ja esta definido em :root no tokens.css.
+   Aqui fazemos apenas os overrides.
+
+   Uso:
+     <html data-theme="dark">          → dark mode
+     <html data-brand="client-a">      → brand azul
+     <html data-theme="dark" data-brand="client-b"> → combinado
+   ============================================================ */
+
+/* --------------------------------------------------
+   DARK MODE
+   -------------------------------------------------- */
+
+[data-theme="dark"] {
+  --color-surface-primary:   #1A1A2E;
+  --color-surface-secondary: #16162A;
+  --color-surface-tertiary:  #121225;
+
+  --color-text-primary:   #F0F0F5;
+  --color-text-secondary: #A0A0B8;
+  --color-text-disabled:  #5A5A72;
+  --color-text-inverse:   #0D0F14;
+
+  --color-neutral-50:   #0D0F14;
+  --color-neutral-100:  #121225;
+  --color-neutral-200:  #16162A;
+  --color-neutral-300:  #1A1A2E;
+  --color-neutral-400:  #2A2A45;
+  --color-neutral-500:  #3A3A55;
+  --color-neutral-600:  #5A5A72;
+  --color-neutral-700:  #7E8799;
+  --color-neutral-800:  #A0A0B8;
+  --color-neutral-900:  #C4C9D0;
+  --color-neutral-950:  #E2E5E9;
+  --color-neutral-1000: #F0F0F5;
+
+  --color-border-default: #2A2A45;
+  --color-border-hover:   #3A3A55;
+
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-sm: 0 4px 6px -2px rgb(0 0 0 / 0.35);
+  --shadow-md: 0 8px 16px -4px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 16px 24px -8px rgb(0 0 0 / 0.5);
+}
+
+/* Garantir que imagens/icones nao invertam no dark */
+[data-theme="dark"] img,
+[data-theme="dark"] .spinner {
+  opacity: 0.9;
+}
+
+/* Override badges e toasts para dark mode */
+[data-theme="dark"] .badge--success {
+  background: #166534; color: #DCFCE7;
+}
+[data-theme="dark"] .badge--warning {
+  background: #92400E; color: #FEF3C7;
+}
+[data-theme="dark"] .badge--error {
+  background: #991B1B; color: #FEE2E2;
+}
+[data-theme="dark"] .badge--info {
+  background: #1E40AF; color: #DBEAFE;
+}
+[data-theme="dark"] .toast--success {
+  background: #0D2A1A; color: #86EFAC; border-color: #166534;
+}
+[data-theme="dark"] .toast--error {
+  background: #2A0D0D; color: #FCA5A5; border-color: #991B1B;
+}
+[data-theme="dark"] .toast--warning {
+  background: #2A1F0D; color: #FDE68A; border-color: #92400E;
+}
+[data-theme="dark"] .toast--info {
+  background: #0D1A2A; color: #93C5FD; border-color: #1E40AF;
+}
+
+/* --------------------------------------------------
+   MULTI-BRAND: Cliente A (azul)
+   -------------------------------------------------- */
+
+[data-brand="client-a"] {
+  --color-brand-primary: #2563EB;
+  --color-brand-hover:   #1D4ED8;
+  --color-brand-pressed: #1E40AF;
+  --color-brand-light:   #EFF6FF;
+}
+
+/* --------------------------------------------------
+   MULTI-BRAND: Cliente B (verde)
+   -------------------------------------------------- */
+
+[data-brand="client-b"] {
+  --color-brand-primary: #059669;
+  --color-brand-hover:   #047857;
+  --color-brand-pressed: #065F46;
+  --color-brand-light:   #ECFDF5;
+}
+
+/* --------------------------------------------------
+   MULTI-BRAND: Cliente C (roxo)
+   -------------------------------------------------- */
+
+[data-brand="client-c"] {
+  --color-brand-primary: #7C3AED;
+  --color-brand-hover:   #6D28D9;
+  --color-brand-pressed: #5B21B6;
+  --color-brand-light:   #F5F3FF;
+}
+
+/* --------------------------------------------------
+   HIGH CONTRAST (acessibilidade)
+   -------------------------------------------------- */
+
+[data-contrast="high"] {
+  --color-text-primary:   #000000;
+  --color-text-secondary: #1A1A1A;
+  --color-text-disabled:  #555555;
+  --color-border-default: #555555;
+  --color-border-hover:   #222222;
+}
+
+[data-contrast="high"][data-theme="dark"] {
+  --color-text-primary:   #FFFFFF;
+  --color-text-secondary: #E0E0E0;
+  --color-text-disabled:  #999999;
+  --color-border-default: #AAAAAA;
+  --color-border-hover:   #FFFFFF;
+}
+
+/* --------------------------------------------------
+   EVENT / SEASONAL THEMING (Natal, Halloween, etc.)
+   --------------------------------------------------
+   Use: <html data-event="natal">
+   Sobrescreve apenas as cores brand — o resto do DS
+   continua funcionando normalmente.
+   -------------------------------------------------- */
+
+[data-event="natal"] {
+  --color-brand-primary: #D42426;
+  --color-brand-hover:   #B81E20;
+  --color-brand-pressed: #9A181A;
+  --color-brand-light:   #FFF0F0;
+  --color-success:       #D42426;
+}
+[data-event="natal"] .btn--primary {
+  box-shadow: 0 0 0 1px #2D8B2E inset;
+  border-color: #2D8B2E;
+}
+[data-event="natal"] .btn--secondary {
+  color: #2D8B2E;
+  border-color: #2D8B2E;
+}
+[data-event="natal"] .btn--ghost:hover {
+  background: #F0FFF0;
+}
+[data-event="natal"] .badge--success {
+  background: #D42426; color: #FFF;
+}
+
+/* --------------------------------------------------
+   TRANSITION SUAVE AO TROCAR TEMA
+   -------------------------------------------------- */
+
+.theming-transition,
+.theming-transition * {
+  transition: background-color 0.25s ease,
+              color 0.25s ease,
+              border-color 0.25s ease,
+              box-shadow 0.25s ease !important;
+}

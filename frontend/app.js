@@ -267,7 +267,7 @@ async function generateCV(id) {
 
       // Atualizar card de match do CV ajustado
       if (adjScore != null) {
-        const adjColor = adjScore >= 80 ? 'var(--green)' : adjScore >= 50 ? 'var(--yellow)' : 'var(--red)';
+        const adjColor = adjScore >= 80 ? 'var(--color-success)' : adjScore >= 50 ? 'var(--color-warning)' : 'var(--color-error)';
         const cardAdj = document.getElementById('cardAdjustedScore');
         const fillAdj = document.getElementById('adjScoreFill');
         const valAdj  = document.getElementById('adjScoreValue');
@@ -277,15 +277,15 @@ async function generateCV(id) {
       }
       resultDiv.style.display = 'block';
       resultDiv.innerHTML = `
-        <div style="background:var(--surface2);border-radius:10px;padding:16px">
+        <div style="background:var(--color-surface-tertiary);border-radius:10px;padding:16px">
           <div style="font-size:15px;font-weight:600;margin-bottom:4px">${cv.name}</div>
-          <div style="font-size:12px;color:var(--text2);margin-bottom:12px">${cv.current_title}</div>
+          <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:12px">${cv.current_title}</div>
           <div style="font-size:13px;line-height:1.5;margin-bottom:12px">${cv.summary}</div>
-          <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin-bottom:6px">Skills em ordem</div>
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--color-text-secondary);margin-bottom:6px">Skills em ordem</div>
           <div style="display:flex;flex-wrap:wrap;gap:4px">
             ${cv.skills_ordered.map(s => {
               const isMatch = cv.matched_skills.includes(s);
-              return `<span style="font-size:12px;padding:3px 8px;border-radius:6px;background:${isMatch ? 'rgba(34,197,94,.15)' : 'var(--surface)'};color:${isMatch ? 'var(--green)' : 'var(--text2)'};border:1px solid ${isMatch ? 'var(--green)' : 'var(--border)'}">${s}</span>`;
+              return `<span style="font-size:12px;padding:3px 8px;border-radius:6px;background:${isMatch ? 'rgba(34,197,94,.15)' : 'var(--color-surface-primary)'};color:${isMatch ? 'var(--color-success)' : 'var(--color-text-secondary)'};border:1px solid ${isMatch ? 'var(--color-success)' : 'var(--color-border-default)'}">${s}</span>`;
             }).join('')}
           </div>
         </div>
@@ -297,7 +297,7 @@ async function generateCV(id) {
         const result2 = await r2.json();
         if (result2.success) {
           const saved = document.createElement('div');
-          saved.style.cssText = 'font-size:12px;color:var(--green);margin-top:8px;text-align:center';
+          saved.style.cssText = 'font-size:12px;color:var(--color-success);margin-top:8px;text-align:center';
           saved.textContent = `📁 ${result2.filename}`;
           resultDiv.appendChild(saved);
         }
@@ -353,23 +353,23 @@ async function openReviewCV(id) {
       <div style="margin-bottom:16px">
         <div style="font-size:13px;font-weight:600;margin-bottom:12px">Revisar CV</div>
 
-        <label style="font-size:11px;color:var(--text2);margin-bottom:4px;display:block">Resumo</label>
-        <textarea id="cvReviewSummary" rows="4" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px;resize:vertical;margin-bottom:12px">${escapeHtml(cv.summary)}</textarea>
+        <label style="font-size:11px;color:var(--color-text-secondary);margin-bottom:4px;display:block">Resumo</label>
+        <textarea id="cvReviewSummary" rows="4" style="width:100%;padding:8px 10px;border:1px solid var(--color-border-default);border-radius:6px;background:var(--color-surface-tertiary);color:var(--color-text-primary);font-size:13px;resize:vertical;margin-bottom:12px">${escapeHtml(cv.summary)}</textarea>
 
-        <label style="font-size:11px;color:var(--text2);margin-bottom:4px;display:block">Skills (uma por linha)</label>
-        <textarea id="cvReviewSkills" rows="6" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px;resize:vertical;margin-bottom:12px">${cv.skills_ordered.map(escapeHtml).join('\n')}</textarea>
+        <label style="font-size:11px;color:var(--color-text-secondary);margin-bottom:4px;display:block">Skills (uma por linha)</label>
+        <textarea id="cvReviewSkills" rows="6" style="width:100%;padding:8px 10px;border:1px solid var(--color-border-default);border-radius:6px;background:var(--color-surface-tertiary);color:var(--color-text-primary);font-size:13px;resize:vertical;margin-bottom:12px">${cv.skills_ordered.map(escapeHtml).join('\n')}</textarea>
 
         ${sfExp ? `
-        <label style="font-size:11px;color:var(--text2);margin-bottom:4px;display:block">Entregas Softfocus (uma por linha)</label>
-        <textarea id="cvReviewHighlights" rows="8" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px;resize:vertical;margin-bottom:12px">${sfExp.highlights.map(escapeHtml).join('\n')}</textarea>
+        <label style="font-size:11px;color:var(--color-text-secondary);margin-bottom:4px;display:block">Entregas Softfocus (uma por linha)</label>
+        <textarea id="cvReviewHighlights" rows="8" style="width:100%;padding:8px 10px;border:1px solid var(--color-border-default);border-radius:6px;background:var(--color-surface-tertiary);color:var(--color-text-primary);font-size:13px;resize:vertical;margin-bottom:12px">${sfExp.highlights.map(escapeHtml).join('\n')}</textarea>
 
-        <label style="font-size:11px;color:var(--text2);margin-bottom:4px;display:block">Resultados Softfocus</label>
-        <textarea id="cvReviewResultados" rows="3" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px;resize:vertical;margin-bottom:12px">${escapeHtml(sfExp.resultados || '')}</textarea>
+        <label style="font-size:11px;color:var(--color-text-secondary);margin-bottom:4px;display:block">Resultados Softfocus</label>
+        <textarea id="cvReviewResultados" rows="3" style="width:100%;padding:8px 10px;border:1px solid var(--color-border-default);border-radius:6px;background:var(--color-surface-tertiary);color:var(--color-text-primary);font-size:13px;resize:vertical;margin-bottom:12px">${escapeHtml(sfExp.resultados || '')}</textarea>
         ` : ''}
 
         <div style="display:flex;gap:8px;margin-top:16px">
-          <button class="btn-secondary" onclick="closeReviewCV()" style="flex:1">Voltar</button>
-          <button class="btn-primary" onclick="saveReviewCV(${id})" style="flex:1">Salvar</button>
+          <button class="btn btn--ghost" onclick="closeReviewCV()" style="flex:1">Voltar</button>
+          <button class="btn btn--primary" onclick="saveReviewCV(${id})" style="flex:1">Salvar</button>
         </div>
       </div>
     `;
@@ -413,7 +413,7 @@ async function saveReviewCV(id) {
       showToast('CV salvo com sucesso!');
       if (saveData.adjusted_score != null) {
         const adjScore = saveData.adjusted_score;
-        const adjColor = adjScore >= 80 ? 'var(--green)' : adjScore >= 50 ? 'var(--yellow)' : 'var(--red)';
+        const adjColor = adjScore >= 80 ? 'var(--color-success)' : adjScore >= 50 ? 'var(--color-warning)' : 'var(--color-error)';
         const cardAdj = document.getElementById('cardAdjustedScore');
         const fillAdj = document.getElementById('adjScoreFill');
         const valAdj  = document.getElementById('adjScoreValue');
@@ -490,22 +490,22 @@ async function openDetail(id) {
   const ats = job.ats_keywords || [];
   const resp = job.responsibilities || [];
 
-  const scoreColor = score === null ? '' : score >= 80 ? 'var(--green)' : score >= 50 ? 'var(--yellow)' : 'var(--red)';
+  const scoreColor = score === null ? '' : score >= 80 ? 'var(--color-success)' : score >= 50 ? 'var(--color-warning)' : 'var(--color-error)';
 
   const actionsEl = document.getElementById('sidePanelActions');
   const ringEl = document.getElementById('sidePanelRing');
 
   if (actionsEl) {
     actionsEl.innerHTML = `
-      <button class="btn-action-primary" id="btnExportPdf" onclick="exportPdf(${job.id})">
+      <button class="btn btn--primary" id="btnExportPdf" onclick="exportPdf(${job.id})">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Exportar PDF
       </button>
-      <button class="btn-action-secondary" id="btnReviewCV" onclick="openReviewCV(${job.id})">
+      <button class="btn btn--ghost" id="btnReviewCV" onclick="openReviewCV(${job.id})">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         Revisar CV
       </button>
-      <button class="btn-action-secondary" id="btnGenerateCV" onclick="generateCV(${job.id})">
+      <button class="btn btn--ghost" id="btnGenerateCV" onclick="generateCV(${job.id})">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
         Gerar Novo CV
       </button>
@@ -566,10 +566,10 @@ async function openDetail(id) {
       </div>
 
       <div class="info-card info-card-match ${job.adjusted_score == null ? 'info-card-disabled' : ''}" id="cardAdjustedScore">
-        <div class="match-bg-fill" id="adjScoreFill" style="width:${job.adjusted_score || 0}%; background:${job.adjusted_score >= 80 ? 'var(--green)' : job.adjusted_score >= 50 ? 'var(--yellow)' : 'var(--red)'};"></div>
+        <div class="match-bg-fill" id="adjScoreFill" style="width:${job.adjusted_score || 0}%; background:${job.adjusted_score >= 80 ? 'var(--color-success)' : job.adjusted_score >= 50 ? 'var(--color-warning)' : 'var(--color-error)'};"></div>
         <div class="info-card-content" style="width:100%;">
           <span class="info-card-label">Match entre vaga e CV ajustado</span>
-          <span class="match-bar-value" id="adjScoreValue" style="color:${job.adjusted_score >= 80 ? 'var(--green)' : job.adjusted_score >= 50 ? 'var(--yellow)' : 'var(--red)'}">${job.adjusted_score != null ? job.adjusted_score + '%' : '—'}</span>
+          <span class="match-bar-value" id="adjScoreValue" style="color:${job.adjusted_score >= 80 ? 'var(--color-success)' : job.adjusted_score >= 50 ? 'var(--color-warning)' : 'var(--color-error)'}">${job.adjusted_score != null ? job.adjusted_score + '%' : '—'}</span>
         </div>
       </div>
 
@@ -645,25 +645,25 @@ async function openDetail(id) {
       <div class="detail-section">
         <h4>Skills Requeridas <span class="section-count">${skills.length}</span></h4>
         <div class="detail-tags">
-          ${skills.map(s => `<span class="detail-tag">${s}</span>`).join('') || '<span style="color:var(--text2);font-size:13px">—</span>'}
+          ${skills.map(s => `<span class="detail-tag">${s}</span>`).join('') || '<span style="color:var(--color-text-secondary);font-size:13px">—</span>'}
         </div>
       </div>
       <div class="detail-section">
         <h4>Diferenciais <span class="section-count">${nice.length}</span></h4>
         <div class="detail-tags">
-          ${nice.map(s => `<span class="detail-tag">${s}</span>`).join('') || '<span style="color:var(--text2);font-size:13px">—</span>'}
+          ${nice.map(s => `<span class="detail-tag">${s}</span>`).join('') || '<span style="color:var(--color-text-secondary);font-size:13px">—</span>'}
         </div>
       </div>
       <div class="detail-section">
         <h4>Ferramentas Exigidas</h4>
         <div class="detail-tags">
-          ${tools.map(s => `<span class="detail-tag">${s}</span>`).join('') || '<span style="color:var(--text2);font-size:13px">—</span>'}
+          ${tools.map(s => `<span class="detail-tag">${s}</span>`).join('') || '<span style="color:var(--color-text-secondary);font-size:13px">—</span>'}
         </div>
       </div>
       <div class="detail-section">
         <h4>ATS Keywords</h4>
         <div class="detail-tags">
-          ${ats.map(s => `<span class="detail-tag">${s}</span>`).join('') || '<span style="color:var(--text2);font-size:13px">—</span>'}
+          ${ats.map(s => `<span class="detail-tag">${s}</span>`).join('') || '<span style="color:var(--color-text-secondary);font-size:13px">—</span>'}
         </div>
       </div>
       <div class="detail-section detail-full">
@@ -673,7 +673,7 @@ async function openDetail(id) {
     </div>
 
     <div style="margin-top:20px">
-      <label class="btn-attach-sm" for="attachInput" style="font-size:12px;padding:6px 12px;border-radius:6px;border:1px solid var(--border);display:inline-flex;align-items:center;gap:6px;cursor:pointer;color:var(--text);background:var(--bg)">
+      <label class="btn-attach-sm" for="attachInput" style="font-size:12px;padding:6px 12px;border-radius:6px;border:1px solid var(--color-border-default);display:inline-flex;align-items:center;gap:6px;cursor:pointer;color:var(--color-text-primary);background:var(--color-surface-tertiary)">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
         Adicionar anexo
       </label>
@@ -688,22 +688,22 @@ async function openDetail(id) {
 
     ${job.job_text || job.requisitos ? `
     <div style="margin-top:20px">
-      <h4 style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin-bottom:8px">Texto da Vaga</h4>
+      <h4 style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--color-text-secondary);margin-bottom:8px">Texto da Vaga</h4>
       <button class="job-text-toggle" id="jobTextToggle" onclick="toggleJobText()">
         <span class="arrow">&#9654;</span> Clique para ler o texto completo
       </button>
       <div class="job-text-content" id="jobTextContent">
-        ${job.empresa_context ? `<div style="margin-bottom:12px"><strong style="font-size:12px;color:var(--text)">Sobre a Empresa</strong>
+        ${job.empresa_context ? `<div style="margin-bottom:12px"><strong style="font-size:12px;color:var(--color-text-primary)">Sobre a Empresa</strong>
 ${escapeHtml(job.empresa_context)}</div>
-<hr style="margin:12px 0;border:none;border-top:1px solid var(--border)">
-<div><strong style="font-size:12px;color:var(--text)">Requisitos da Vaga</strong>
+<hr style="margin:12px 0;border:none;border-top:1px solid var(--color-border-default)">
+<div><strong style="font-size:12px;color:var(--color-text-primary)">Requisitos da Vaga</strong>
 ${escapeHtml(job.requisitos || job.job_text)}</div>` : escapeHtml(job.job_text || job.requisitos)}
       </div>
     </div>
     ` : ''}
 
     <div class="detail-full detail-btn-row" style="margin-top:20px">
-      <button class="btn-secondary" onclick="closeDetail()">Cancelar</button>
+      <button class="btn btn--ghost" onclick="closeDetail()">Cancelar</button>
       <button class="btn-save" id="btnSaveDetail" onclick="saveJobDetail(${job.id})">Salvar</button>
     </div>
   `;
@@ -826,16 +826,16 @@ function showConfirm(message, onConfirm) {
   overlay.style.display = 'flex';
   overlay.style.zIndex = '200';
   overlay.innerHTML = `
-    <div class="modal" style="max-width:380px">
-      <div class="modal-header">
+    <div class="modal dialog" style="max-width:380px">
+      <div class="modal-header dialog__header">
         <h2>Confirmação</h2>
       </div>
-      <div class="modal-body">
+      <div class="modal-body dialog__body">
         <p style="font-size:14px;line-height:1.5">${message}</p>
       </div>
-      <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end">
-        <button class="btn-secondary" style="flex:1" id="_cfCancel">Cancelar</button>
-        <button class="btn-primary" style="flex:1" id="_cfOk">Ok</button>
+      <div class="modal-footer dialog__footer" style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn--ghost" style="flex:1" id="_cfCancel">Cancelar</button>
+        <button class="btn btn--primary" style="flex:1" id="_cfOk">Ok</button>
       </div>
     </div>
   `;

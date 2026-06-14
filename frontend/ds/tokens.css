@@ -1,0 +1,157 @@
+/* ============================================================
+   DESIGN TOKENS
+   ============================================================
+   Tokens são os valores atômicos do Design System.
+   Eles garantem consistência visual em todo o projeto.
+   
+   Categorias:
+   - Color  → cores (hex, rgba)
+   - Font   → tipografia (família, tamanho, peso)
+   - Space  → espaçamento (px)
+   - Radius → cantos arredondados (px)
+   - Shadow → sombras
+   ============================================================ */
+
+:root {
+  /* --------------------------------------------------
+     COLORS — PALETA BASE
+     --------------------------------------------------
+     A paleta tem 3 partes:
+     1. Brand  → cores da marca (primário, hover, pressed)
+     2. Neutral → escala de cinza (50 = mais claro, 1000 = mais escuro)
+     3. Semantic → cores com significado (success, warning, error, info)
+     -------------------------------------------------- */
+
+  /* --- Brand --- */
+  --color-brand-primary: #FF5A00;
+  --color-brand-hover:   #D94A00;
+  --color-brand-pressed: #B83B00;
+  --color-brand-light:   #FFF0E6;
+
+  /* --- Neutral scale --- */
+  --color-neutral-50:   #FCFCFC;
+  --color-neutral-100:  #F8F9FA;
+  --color-neutral-200:  #F1F3F5;
+  --color-neutral-300:  #E2E5E9;
+  --color-neutral-400:  #C4C9D0;
+  --color-neutral-500:  #A3AAB5;
+  --color-neutral-600:  #7E8799;
+  --color-neutral-700:  #5B6577;
+  --color-neutral-800:  #3E4757;
+  --color-neutral-900:  #282F3D;
+  --color-neutral-950:  #181C24;
+  --color-neutral-1000: #0D0F14;
+
+  /* --- Surface (fundos) --- */
+  --color-surface-primary: #FFFFFF;
+  --color-surface-secondary: var(--color-neutral-50);
+  --color-surface-tertiary: var(--color-neutral-100);
+
+  /* --- Texto --- */
+  --color-text-primary:   var(--color-neutral-1000);
+  --color-text-secondary: var(--color-neutral-600);
+  --color-text-disabled:  var(--color-neutral-400);
+  --color-text-inverse:   #FFFFFF;
+
+  /* --- Borda --- */
+  --color-border-default: var(--color-neutral-300);
+  --color-border-hover:   var(--color-neutral-400);
+
+  /* --- Semantic (significado) --- */
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-error:   #EF4444;
+  --color-info:    #3B82F6;
+
+  /* --------------------------------------------------
+     TYPOGRAPHY
+     --------------------------------------------------
+     Type scale com 7 tamanhos.
+     Cada token tem: font-family, weight, size, line-height, letter-spacing
+     -------------------------------------------------- */
+
+  --font-family-primary: 'Segoe UI', Arial, sans-serif;
+  --font-family-mono:    'Cascadia Code', 'Consolas', monospace;
+
+  /* Type scale */
+  --font-xs-size:   12px;
+  --font-xs-weight: 400;
+  --font-xs-height: 16px;
+  --font-xs-space:  0%;
+
+  --font-sm-size:   14px;
+  --font-sm-weight: 400;
+  --font-sm-height: 20px;
+  --font-sm-space:  0%;
+
+  --font-base-size:   16px;
+  --font-base-weight: 400;
+  --font-base-height: 24px;
+  --font-base-space:  0%;
+
+  --font-lg-size:   18px;
+  --font-lg-weight: 500;
+  --font-lg-height: 28px;
+  --font-lg-space:  -1%;
+
+  --font-xl-size:   24px;
+  --font-xl-weight: 600;
+  --font-xl-height: 32px;
+  --font-xl-space:  -1%;
+
+  --font-2xl-size:   32px;
+  --font-2xl-weight: 600;
+  --font-2xl-height: 40px;
+  --font-2xl-space:  -1%;
+
+  --font-3xl-size:   40px;
+  --font-3xl-weight: 700;
+  --font-3xl-height: 48px;
+  --font-3xl-space:  -2%;
+
+  --font-4xl-size:   56px;
+  --font-4xl-weight: 700;
+  --font-4xl-height: 64px;
+  --font-4xl-space:  -2%;
+
+  /* --------------------------------------------------
+     SPACING
+     --------------------------------------------------
+     Baseado em grid de 8px.
+     Usado para padding, gap, margin.
+     -------------------------------------------------- */
+
+  --space-0:   0px;
+  --space-px:  1px;
+  --space-2xs: 4px;
+  --space-xs:  8px;
+  --space-sm:  12px;
+  --space-md:  16px;
+  --space-lg:  24px;
+  --space-xl:  32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+  --space-4xl: 96px;
+  --space-5xl: 128px;
+
+  /* --------------------------------------------------
+     BORDER RADIUS
+     -------------------------------------------------- */
+
+  --radius-none: 0px;
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-full: 999px;
+
+  /* --------------------------------------------------
+     SHADOWS (ELEVATION)
+     -------------------------------------------------- */
+
+  --shadow-none: none;
+  --shadow-xs:  0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-sm:  0 4px 6px -2px rgb(0 0 0 / 0.08);
+  --shadow-md:  0 8px 16px -4px rgb(0 0 0 / 0.1);
+  --shadow-lg:  0 16px 24px -8px rgb(0 0 0 / 0.12);
+}
