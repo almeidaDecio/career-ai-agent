@@ -204,9 +204,10 @@ document.getElementById('btnProcessar').addEventListener('click', async () => {
     const result = await r.json();
     if (result.success) {
       statusEl.className = 'modal-status success';
-      statusEl.textContent = `✅ ${result.data.job_title || 'Vaga'} — ${result.data.company || 'sem empresa'} salva com sucesso!`;
+      statusEl.textContent = `✅ ${result.data.job_title || 'Vaga'} — ${result.data.company || 'sem empresa'} salva! Gerando CV...`;
       document.getElementById('modalNovaVaga').classList.add('hidden');
       loadJobs();
+      setTimeout(() => generateCV(result.id), 500);
     } else {
       statusEl.className = 'modal-status error';
       statusEl.textContent = `❌ ${result.error}`;
@@ -290,7 +291,7 @@ async function generateCV(id) {
         </div>
       `;
       btn.textContent = '✓ Gerado';
-      setTimeout(() => { btn.textContent = 'Gerar CV Otimizado'; btn.disabled = false; }, 2000);
+      setTimeout(() => { btn.textContent = 'Gerar Novo CV'; btn.disabled = false; }, 2000);
       try {
         const r2 = await fetch(`${API}/api/jobs/${id}/save-cv-file`, { method: 'POST' });
         const result2 = await r2.json();
@@ -410,7 +411,18 @@ async function saveReviewCV(id) {
     const saveData = await saveR.json();
     if (saveData.success) {
       showToast('CV salvo com sucesso!');
+      if (saveData.adjusted_score != null) {
+        const adjScore = saveData.adjusted_score;
+        const adjColor = adjScore >= 80 ? 'var(--green)' : adjScore >= 50 ? 'var(--yellow)' : 'var(--red)';
+        const cardAdj = document.getElementById('cardAdjustedScore');
+        const fillAdj = document.getElementById('adjScoreFill');
+        const valAdj  = document.getElementById('adjScoreValue');
+        if (cardAdj) cardAdj.classList.remove('info-card-disabled');
+        if (fillAdj) { fillAdj.style.width = adjScore + '%'; fillAdj.style.background = adjColor; }
+        if (valAdj) { valAdj.textContent = adjScore + '%'; valAdj.style.color = adjColor; }
+      }
       closeReviewCV();
+      loadJobs();
     } else {
       showToast('Erro ao salvar: ' + saveData.error);
     }
@@ -485,17 +497,17 @@ async function openDetail(id) {
 
   if (actionsEl) {
     actionsEl.innerHTML = `
-      <button class="btn-action-primary" id="btnGenerateCV" onclick="generateCV(${job.id})">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-        Gerar CV
-      </button>
-      <button class="btn-action-secondary" id="btnExportPdf" onclick="exportPdf(${job.id})">
+      <button class="btn-action-primary" id="btnExportPdf" onclick="exportPdf(${job.id})">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Exportar PDF
       </button>
       <button class="btn-action-secondary" id="btnReviewCV" onclick="openReviewCV(${job.id})">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         Revisar CV
+      </button>
+      <button class="btn-action-secondary" id="btnGenerateCV" onclick="generateCV(${job.id})">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Gerar Novo CV
       </button>
     `;
   }
@@ -633,13 +645,13 @@ async function openDetail(id) {
       <div class="detail-section">
         <h4>Skills Requeridas <span class="section-count">${skills.length}</span></h4>
         <div class="detail-tags">
-          ${skills.map(s => `<span class="detail-tag tag-teal">${s}</span>`).join('') || '<span style="color:var(--text2);font-size:13px">—</span>'}
+          ${skills.map(s => `<span class="detail-tag">${s}</span>`).join('') || '<span style="color:var(--text2);font-size:13px">—</span>'}
         </div>
       </div>
       <div class="detail-section">
         <h4>Diferenciais <span class="section-count">${nice.length}</span></h4>
         <div class="detail-tags">
-          ${nice.map(s => `<span class="detail-tag tag-amber">${s}</span>`).join('') || '<span style="color:var(--text2);font-size:13px">—</span>'}
+          ${nice.map(s => `<span class="detail-tag">${s}</span>`).join('') || '<span style="color:var(--text2);font-size:13px">—</span>'}
         </div>
       </div>
       <div class="detail-section">
@@ -651,7 +663,7 @@ async function openDetail(id) {
       <div class="detail-section">
         <h4>ATS Keywords</h4>
         <div class="detail-tags">
-          ${ats.map(s => `<span class="detail-tag tag-purple">${s}</span>`).join('') || '<span style="color:var(--text2);font-size:13px">—</span>'}
+          ${ats.map(s => `<span class="detail-tag">${s}</span>`).join('') || '<span style="color:var(--text2);font-size:13px">—</span>'}
         </div>
       </div>
       <div class="detail-section detail-full">

@@ -333,6 +333,8 @@ ${structuralTermsRule}
         t = t.replace(/\bAtu[oi] (com|em|na|no|nas|nos)\b/i, 'Trabalhei em');
         t = t.replace(/\bEra respons[áa]vel por\b/i, 'Estruturei');
         t = t.replace(/\bAtuava\b/i, 'Atuei');
+        t = t.replace(/^Documentação de\b/i, 'Contribuí na documentação de');
+        t = t.replace(/\be contribuição para (a|o|as|os)\b/i, ' e na');
         // Remover adjetivos genéricos isolados
         t = t.replace(/\b(alta performance|fora da curva|acima da m[ée]dia|excepcional|diferenciado|refer[êe]ncia|vision[áa]rio|completo|multifuncional|proativo|resiliente|focado em resultados?|apaixonado)\b/gi, '').replace(/\s{2,}/g, ' ').trim();
         return t;
@@ -382,9 +384,8 @@ function capitalizeSkill(s) {
 }
 
 function generateHTML(cv, ollamaResult) {
-  const bullet = String.fromCharCode(8226);
   cv.skills_ordered = sanitizeSkills([...cv.skills_ordered]);
-  const skillsHTML = cv.skills_ordered.map(capitalizeSkill).join(' ' + bullet + ' ');
+  const skillsHTML = cv.skills_ordered.map(capitalizeSkill).join(' | ');
 
   const cleanBullet = s => s.replace(/^[\s•\-–\*]+/, '').trim();
 
@@ -418,14 +419,13 @@ function generateHTML(cv, ollamaResult) {
 }
 
 function generateExternalHTML(cv) {
-  const bullet = String.fromCharCode(8226);
   const skillsList = Array.isArray(cv.skills_ordered) ? cv.skills_ordered : [];
-  const skillsHTML = skillsList.map(s => escapeHtml(s.trim())).filter(Boolean).join(` ${bullet} `);
+  const skillsHTML = skillsList.map(s => escapeHtml(s.trim())).filter(Boolean).join(` | `);
 
   const esc = escapeHtml;
   const experienciaHTML = (cv.experience || []).map(exp => {
     const highlights = (exp.highlights || []).filter(Boolean);
-    const skills = (exp.skills || []).filter(Boolean).map(esc).join(' · ');
+    const skills = (exp.skills || []).filter(Boolean).map(esc).join(' | ');
     return `
     <div class="job">
       <div class="job-header">
@@ -478,7 +478,7 @@ ${style}
 
   <header class="header">
     <div class="header-name">${esc(cv.name) || 'Currículo'}</div>
-    <div class="header-title">${esc(cv.current_title) || ''}</div>
+    <div class="header-title">Product Designer | Designer UX/UI | Service Designer | Designer de Produtos</div>
     ${contactsHTML ? `<div class="contacts">${contactsHTML}</div>` : ''}
     <div style="font-size:11.5px;color:var(--ink-light);margin-top:8px">Porecatu – PR (Disponível para atuação Remota ou Híbrida em Maringá/Londrina e região)</div>
   </header>

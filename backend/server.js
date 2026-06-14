@@ -106,18 +106,44 @@ app.post('/api/jobs/:id/details', (req, res) => {
     db.prepare('UPDATE vagas SET applied_date = ?, platform = ?, interview_type = ?, location = ?, company = ?, seniority = ? WHERE id = ?')
       .run(applied_date, platform, interview_type, location, company, seniority, req.params.id);
 
-    // Recalcular matching
+    // Recalcular matching e adjusted_score
     const row = db.prepare('SELECT * FROM vagas WHERE id = ?').get(req.params.id);
     if (row) {
+      const jobText = row.requisitos || row.job_text || '';
       const job = {
-        required_skills: safeJson(row.required_skills),
-        nice_to_have_skills: safeJson(row.nice_to_have_skills),
-        tools: safeJson(row.tools),
-        ats_keywords: safeJson(row.ats_keywords)
+        required_skills: skillExpander.expand(safeJson(row.required_skills), jobText),
+        nice_to_have_skills: skillExpander.expand(safeJson(row.nice_to_have_skills), jobText),
+        tools: skillExpander.expand(safeJson(row.tools), jobText),
+        ats_keywords: skillExpander.expand(safeJson(row.ats_keywords), jobText)
       };
+      
       const match = matcher.run(job);
       if (match.score !== null) {
         db.prepare('UPDATE vagas SET matching_score = ? WHERE id = ?').run(match.score, req.params.id);
+      }
+
+      // Se já houver CV gerado no cache, recalcula o score do CV ajustado também
+      const cachePath = path.join(__dirname, '..', 'data', `cv_cache_${req.params.id}.json`);
+      if (fs.existsSync(cachePath)) {
+        try {
+          const cv = JSON.parse(fs.readFileSync(cachePath, 'utf8').trim().replace(/^\uFEFF/, ''));
+          const sfExp = cv.experience.find(e => e.company.toLowerCase().includes('softfocus'));
+          const ollamaResult = {
+            resumo_ajustado: cv.summary,
+            softfocus_cargo: sfExp ? sfExp.role : 'Product Designer',
+            softfocus_periodo: sfExp && sfExp.period ? sfExp.period : 'jul/2021 – fev/2026',
+            softfocus_resultados: sfExp && sfExp.resultados ? sfExp.resultados : '',
+            softfocus_entregas_ajustadas: sfExp && sfExp.highlights ? sfExp.highlights : []
+          };
+          cvGenerator.generateHTML(cv, ollamaResult);
+
+          const matchAdj = matcher.runWithCV(cv, job);
+          if (matchAdj.score !== null) {
+            db.prepare('UPDATE vagas SET adjusted_score = ? WHERE id = ?').run(matchAdj.score, req.params.id);
+          }
+        } catch (err) {
+          console.error('Erro ao recalcular adjusted_score em details:', err);
+        }
       }
     }
     res.json({ success: true });
@@ -349,7 +375,37 @@ app.put('/api/jobs/:id/cv-cache', (req, res) => {
     const { cv } = req.body;
     if (!cv) return res.status(400).json({ error: 'Campo cv é obrigatório' });
     fs.writeFileSync(cachePath, JSON.stringify(cv, null, 2), 'utf8');
-    res.json({ success: true });
+
+    // Recalcular o adjusted_score e atualizar o HTML gerado
+    const row = db.prepare('SELECT * FROM vagas WHERE id = ?').get(req.params.id);
+    let score = null;
+    if (row) {
+      const jobText = row.requisitos || row.job_text || '';
+      const job = {
+        required_skills: skillExpander.expand(safeJson(row.required_skills), jobText),
+        nice_to_have_skills: skillExpander.expand(safeJson(row.nice_to_have_skills), jobText),
+        tools: skillExpander.expand(safeJson(row.tools), jobText),
+        ats_keywords: skillExpander.expand(safeJson(row.ats_keywords), jobText)
+      };
+
+      const sfExp = cv.experience.find(e => e.company.toLowerCase().includes('softfocus'));
+      const ollamaResult = {
+        resumo_ajustado: cv.summary,
+        softfocus_cargo: sfExp ? sfExp.role : 'Product Designer',
+        softfocus_periodo: sfExp && sfExp.period ? sfExp.period : 'jul/2021 – fev/2026',
+        softfocus_resultados: sfExp && sfExp.resultados ? sfExp.resultados : '',
+        softfocus_entregas_ajustadas: sfExp && sfExp.highlights ? sfExp.highlights : []
+      };
+      cvGenerator.generateHTML(cv, ollamaResult);
+
+      const matchAdj = matcher.runWithCV(cv, job);
+      if (matchAdj.score !== null) {
+        db.prepare('UPDATE vagas SET adjusted_score = ? WHERE id = ?').run(matchAdj.score, req.params.id);
+        score = matchAdj.score;
+      }
+    }
+
+    res.json({ success: true, adjusted_score: score });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -380,7 +436,7 @@ app.post('/api/jobs/:id/save-cv-file', async (req, res) => {
 
     const summary = `${cv.summary}`;
 
-    let output = `${cv.name}\n${cv.current_title}\n\ndecio.almeida.1969@gmail.com | +55 11 99376-3161\nlinkedin.com/in/décio-d-almeida-74186621\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nRESUMO PROFISSIONAL\n\n${summary}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nCOMPETÊNCIAS\n\n${cv.skills_ordered.join(' · ')}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nEXPERIÊNCIA PROFISSIONAL\n\n`;
+    let output = `${cv.name}\nProduct Designer | Designer UX/UI | Service Designer | Designer de Produtos\n\ndecio.almeida.1969@gmail.com | +55 11 99376-3161\nlinkedin.com/in/décio-d-almeida-74186621\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nRESUMO PROFISSIONAL\n\n${summary}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nCOMPETÊNCIAS\n\n${cv.skills_ordered.join(' · ')}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nEXPERIÊNCIA PROFISSIONAL\n\n`;
 
     (cv.experience || []).forEach((exp, i) => {
       output += `${exp.company} — ${exp.role}${exp.period ? ' | ' + exp.period : ''}\n\n`;
@@ -388,7 +444,7 @@ app.post('/api/jobs/:id/save-cv-file', async (req, res) => {
         output += `${exp.resultados}\n\n`;
       }
       if (exp.highlights && exp.highlights.length) {
-        output += exp.highlights.map(h => '• ' + h).join('\n') + '\n\n';
+        output += exp.highlights.map(h => '| ' + h).join('\n') + '\n\n';
       }
       if (exp.skills && exp.skills.length) {
         output += `Skills: ${exp.skills.join(' · ')}\n`;
@@ -408,8 +464,7 @@ app.post('/api/jobs/:id/save-cv-file', async (req, res) => {
     });
 
     const downloadsPath = path.join(require('os').homedir(), 'Downloads');
-    const companySlug = (row.company || 'vaga').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
-    const filename = `CV_otimizado_${companySlug}.txt`;
+    const filename = `Decio_DAlmeida_Product_Designer.txt`;
     const filePath = path.join(downloadsPath, filename);
     fs.writeFileSync(filePath, output, 'utf8');
 
@@ -447,8 +502,7 @@ Gerado por Career AI Agent em ${new Date().toLocaleDateString('pt-BR')}
 `;
 
     const downloadsPath = path.join(require('os').homedir(), 'Downloads');
-    const companySlug = (row.company || 'vaga').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
-    const filename = `CV_otimizado_${companySlug}.txt`;
+    const filename = `Decio_DAlmeida_Product_Designer.txt`;
     const filePath = path.join(downloadsPath, filename);
     fs.writeFileSync(filePath, output, 'utf8');
 

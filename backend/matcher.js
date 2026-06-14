@@ -66,10 +66,21 @@ function buildCvTexts(cv) {
   // Se for CV da Ollama (sem categories), complementa com o CV base para não perder matches
   if (!cv.categories) {
     try {
-      const baseCv = JSON.parse(fs.readFileSync(CV_PATH, 'utf8'));
+      const baseCv = JSON.parse(fs.readFileSync(CV_PATH, 'utf8').trim().replace(/^\uFEFF/, ''));
+      if (baseCv.summary) texts.push(normalize(baseCv.summary));
       if (baseCv.categories) {
         for (const cat of Object.values(baseCv.categories)) {
+          for (const skill of (cat.skills || [])) {
+            texts.push(normalize(skill));
+          }
           if (cat.evidence) texts.push(normalize(cat.evidence));
+        }
+      }
+      if (baseCv.experience) {
+        for (const exp of baseCv.experience) {
+          if (exp.highlights) exp.highlights.forEach(h => texts.push(normalize(h)));
+          if (exp.resultados) texts.push(normalize(exp.resultados));
+          if (exp.skills) exp.skills.forEach(s => texts.push(normalize(s)));
         }
       }
     } catch {}
