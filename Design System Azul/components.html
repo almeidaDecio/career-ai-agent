@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Components — Design System Azul</title>
+  <link rel="stylesheet" href="azul.css">
+  <style>
+    .component-card { margin-bottom: 48px; }
+    .component-card h2 { font-size: var(--font-2xl-size); font-weight: 600; margin-bottom: 4px; }
+    .component-card > p { color: var(--color-text-tertiary); margin-bottom: 20px; }
+    .component-preview {
+      background: var(--color-bg-default);
+      border: 1px solid var(--color-border-default);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+    }
+    .component-code { margin-top: 12px; }
+    .divider { width: 100%; height: 1px; background: var(--color-border-subtle); margin: 24px 0; }
+  </style>
+</head>
+<body>
+  <nav class="ds-nav">
+    <div class="ds-nav__inner">
+      <a href="index.html" class="ds-nav__brand">Azul<span>.</span></a>
+      <ul class="ds-nav__links">
+        <li><a href="foundations.html">Foundations</a></li>
+        <li><a href="semantic.html">Semantic</a></li>
+        <li><a href="components.html" class="active">Components</a></li>
+        <li><a href="usage.html">Usage</a></li>
+        <li><a href="demo/index.html">Exemplos</a></li>
+      </ul>
+      <div class="ds-nav__actions">
+        <button class="theme-toggle" onclick="toggleTheme()">
+          <span class="theme-toggle__icon" id="themeIcon">&#x263D;</span>
+          <span id="themeLabel">Escuro</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+  <div class="ds-page">
+    <header class="ds-header">
+      <h1 class="text-3xl">Components</h1>
+      <p class="text-lg text-secondary">Componentes prontos para usar com os tokens do Design System Azul.</p>
+    </header>
+
+    <!-- Buttons -->
+    <div class="component-card">
+      <h2>Buttons</h2>
+      <p>Classes: <code>.btn</code> + variante.</p>
+      <div class="component-preview">
+        <div class="demo-row">
+          <div class="demo-label">Variants</div>
+          <button class="btn btn--primary">Primary</button>
+          <button class="btn btn--secondary">Secondary</button>
+          <button class="btn btn--ghost">Ghost</button>
+          <button class="btn btn--primary" disabled>Disabled</button>
+        </div>
+        <div class="demo-row">
+          <div class="demo-label">Sizes</div>
+          <button class="btn btn--primary btn--sm">Small</button>
+          <button class="btn btn--primary">Default</button>
+          <button class="btn btn--primary btn--lg">Large</button>
+        </div>
+        <div class="demo-row">
+          <div class="demo-label">With icon</div>
+          <button class="btn btn--primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export
+          </button>
+        </div>
+      </div>
+      <div class="component-code">
+        <pre><code>&lt;button class="btn btn--primary"&gt;Primary&lt;/button&gt;
+&lt;button class="btn btn--secondary"&gt;Secondary&lt;/button&gt;
+&lt;button class="btn btn--ghost"&gt;Ghost&lt;/button&gt;
+&lt;button class="btn btn--primary btn--sm"&gt;Small&lt;/button&gt;
+&lt;button class="btn btn--primary btn--lg"&gt;Large&lt;/button&gt;</code></pre>
+      </div>
+    </div>
+
+    <!-- Badges -->
+    <div class="component-card">
+      <h2>Badges</h2>
+      <p>Classes: <code>.badge</code> + <code>.badge--*</code></p>
+      <div class="component-preview">
+        <div class="flex gap-sm flex-wrap">
+          <span class="badge badge--neutral">Neutral</span>
+          <span class="badge badge--brand">Brand</span>
+          <span class="badge badge--success">Success</span>
+          <span class="badge badge--warning">Warning</span>
+          <span class="badge badge--error">Error</span>
+          <span class="badge badge--info">Info</span>
+        </div>
+      </div>
+      <div class="component-code">
+        <pre><code>&lt;span class="badge badge--neutral"&gt;Neutral&lt;/span&gt;
+&lt;span class="badge badge--success"&gt;Success&lt;/span&gt;
+&lt;span class="badge badge--warning"&gt;Warning&lt;/span&gt;</code></pre>
+      </div>
+    </div>
+
+    <!-- Inputs -->
+    <div class="component-card">
+      <h2>Inputs</h2>
+      <p>Classe: <code>.input</code></p>
+      <div class="component-preview">
+        <div class="demo-row">
+          <input class="input" type="text" placeholder="Placeholder">
+        </div>
+        <div class="demo-row">
+          <input class="input" type="text" value="Com valor preenchido">
+        </div>
+        <div class="demo-row">
+          <select class="input">
+            <option>Opcao 1</option>
+            <option>Opcao 2</option>
+            <option>Opcao 3</option>
+          </select>
+        </div>
+        <div class="demo-row">
+          <textarea class="input" rows="3" placeholder="Textarea"></textarea>
+        </div>
+      </div>
+      <div class="component-code">
+        <pre><code>&lt;input class="input" type="text" placeholder="Placeholder"&gt;
+&lt;select class="input"&gt;&lt;option&gt;...&lt;/option&gt;&lt;/select&gt;
+&lt;textarea class="input" rows="3"&gt;&lt;/textarea&gt;</code></pre>
+      </div>
+    </div>
+
+    <!-- Cards -->
+    <div class="component-card">
+      <h2>Cards</h2>
+      <p>Classe: <code>.card-demo</code></p>
+      <div class="component-preview">
+        <div style="max-width:360px">
+          <div class="card-demo">
+            <h4>Titulo do Card</h4>
+            <p>Descricao do card com informacoes relevantes sobre o conteudo exibido.</p>
+            <div style="margin-top:16px;display:flex;gap:8px">
+              <button class="btn btn--primary btn--sm">Acao</button>
+              <button class="btn btn--ghost btn--sm">Cancelar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Avatars -->
+    <div class="component-card">
+      <h2>Avatars</h2>
+      <p>Classes: <code>.avatar</code> + tamanhos opcionais.</p>
+      <div class="component-preview">
+        <div class="flex gap-md items-center">
+          <div class="avatar avatar--sm">AB</div>
+          <div class="avatar">AB</div>
+          <div class="avatar avatar--lg">AB</div>
+          <div class="avatar">
+            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%2322D3C5'/%3E%3Ctext x='50' y='58' text-anchor='middle' fill='%230A0C10' font-size='36' font-weight='700'%3EA%3C/text%3E%3C/svg%3E" alt="Avatar">
+          </div>
+        </div>
+      </div>
+      <div class="component-code">
+        <pre><code>&lt;div class="avatar avatar--sm"&gt;AB&lt;/div&gt;
+&lt;div class="avatar"&gt;AB&lt;/div&gt;
+&lt;div class="avatar avatar--lg"&gt;AB&lt;/div&gt;
+&lt;div class="avatar"&gt;&lt;img src="..." alt=""&gt;&lt;/div&gt;</code></pre>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="component-card">
+      <h2>Tables</h2>
+      <p>Use tag <code>&lt;table&gt;</code> nativa.</p>
+      <div class="component-preview">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Nome</th><th>Cargo</th><th>Status</th><th>Data</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Ana Beatriz</td><td>Product Designer</td><td><span class="badge badge--success">Ativo</span></td><td>15/06/2026</td></tr>
+              <tr><td>Carlos Silva</td><td>UX Designer</td><td><span class="badge badge--warning">Ferias</span></td><td>10/05/2026</td></tr>
+              <tr><td>Diana Costa</td><td>Design Lead</td><td><span class="badge badge--error">Ausente</span></td><td>01/06/2026</td></tr>
+              <tr><td>Eduardo Lima</td><td>Frontend Dev</td><td><span class="badge badge--neutral">Inativo</span></td><td>20/04/2026</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="component-card">
+      <h2>Toast / Notificacao</h2>
+      <p>Exemplo de notificacao toast com os tokens de cor.</p>
+      <div class="component-preview">
+        <div class="flex flex-col gap-sm" style="max-width:400px">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-md);background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);color:var(--color-success-600);font-size:14px">
+            <span>&#10003;</span>
+            <span>CV salvo com sucesso!</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-md);background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);color:var(--color-warning-600);font-size:14px">
+            <span>&#9888;</span>
+            <span>Processamento em andamento...</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-md);background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:var(--color-error-600);font-size:14px">
+            <span>&#10007;</span>
+            <span>Erro ao gerar CV.</span>
+          </div>
+        </div>
+      </div>
+      <div class="component-code">
+        <pre><code>&lt;div style="background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);color:var(--color-success-600)"&gt;
+  &#10003; CV salvo com sucesso!
+&lt;/div&gt;</code></pre>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="component-card">
+      <h2>Empty State</h2>
+      <div class="component-preview">
+        <div class="flex flex-col items-center" style="padding:40px 20px;text-align:center">
+          <span style="font-size:40px;margin-bottom:12px;color:var(--color-text-tertiary)">&#x1F4CB;</span>
+          <h3 style="font-size:18px;font-weight:600;margin-bottom:4px">Nenhuma vaga encontrada</h3>
+          <p style="font-size:14px;color:var(--color-text-tertiary);margin-bottom:16px;Crie sua primeira vaga para comecar.</p>
+          <button class="btn btn--primary">Criar Vaga</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const isDark = html.getAttribute('data-theme') === 'dark';
+      const newTheme = isDark ? 'light' : 'dark';
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('ds-theme', newTheme);
+      document.getElementById('themeIcon').textContent = isDark ? '\u263D' : '\u2600';
+      document.getElementById('themeLabel').textContent = isDark ? 'Escuro' : 'Claro';
+    }
+    (function initTheme() {
+      const saved = localStorage.getItem('ds-theme') || 'dark';
+      if (saved === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+        document.getElementById('themeIcon').textContent = '\u2600';
+        document.getElementById('themeLabel').textContent = 'Claro';
+      }
+    })();
+  </script>
+</body>
+</html>

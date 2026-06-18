@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Foundations — Design System Azul</title>
+  <link rel="stylesheet" href="azul.css">
+</head>
+<body>
+  <nav class="ds-nav">
+    <div class="ds-nav__inner">
+      <a href="index.html" class="ds-nav__brand">Azul<span>.</span></a>
+      <ul class="ds-nav__links">
+        <li><a href="foundations.html" class="active">Foundations</a></li>
+        <li><a href="semantic.html">Semantic</a></li>
+        <li><a href="components.html">Components</a></li>
+        <li><a href="usage.html">Usage</a></li>
+        <li><a href="demo/index.html">Exemplos</a></li>
+      </ul>
+      <div class="ds-nav__actions">
+        <button class="theme-toggle" onclick="toggleTheme()">
+          <span class="theme-toggle__icon" id="themeIcon">&#x263D;</span>
+          <span id="themeLabel">Escuro</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+  <div class="ds-page">
+    <header class="ds-header">
+      <h1 class="text-3xl">Foundations</h1>
+      <p class="text-lg text-secondary">Os tokens atomicos que constroem o sistema: cor, tipografia, espaco, raio e sombra.</p>
+    </header>
+
+    <!-- Brand Colors -->
+    <section class="section">
+      <h2>Brand <code>--color-brand-*</code></h2>
+      <p>A paleta principal do sistema. Use <code>--color-brand-500</code> como primary.</p>
+      <div class="swatch-row">
+        <div class="swatch" style="background:#E6FFFC;color:#0B4945">50</div>
+        <div class="swatch" style="background:#BDFCF6;color:#0B4945">100</div>
+        <div class="swatch" style="background:#8AF6EC;color:#0B4945">200</div>
+        <div class="swatch" style="background:#56F0E0;color:#0B4945">300</div>
+        <div class="swatch" style="background:#2FE7D5;color:#0B4945">400</div>
+        <div class="swatch" style="background:#22D3C5;color:#fff">500</div>
+        <div class="swatch" style="background:#19B5A9;color:#fff">600</div>
+        <div class="swatch" style="background:#148E84;color:#fff">700</div>
+        <div class="swatch" style="background:#106B64;color:#fff">800</div>
+        <div class="swatch" style="background:#0B4945;color:#fff">900</div>
+      </div>
+    </section>
+
+    <!-- Neutral Colors -->
+    <section class="section">
+      <h2>Neutral <code>--color-neutral-*</code></h2>
+      <p>Escala de cinzas para textos, fundos e bordas.</p>
+      <div class="swatch-row">
+        <div class="swatch" style="background:#FFFFFF;color:#0F172A">0</div>
+        <div class="swatch" style="background:#F8FAFC;color:#0F172A">50</div>
+        <div class="swatch" style="background:#F1F5F9;color:#0F172A">100</div>
+        <div class="swatch" style="background:#E2E8F0;color:#0F172A">200</div>
+        <div class="swatch" style="background:#CBD5E1;color:#0F172A">300</div>
+        <div class="swatch" style="background:#94A3B8;color:#fff">400</div>
+        <div class="swatch" style="background:#64748B;color:#fff">500</div>
+        <div class="swatch" style="background:#475569;color:#fff">600</div>
+        <div class="swatch" style="background:#334155;color:#fff">700</div>
+        <div class="swatch" style="background:#1E293B;color:#fff">800</div>
+        <div class="swatch" style="background:#0F172A;color:#fff">900</div>
+        <div class="swatch" style="background:#020617;color:#fff">950</div>
+      </div>
+    </section>
+
+    <!-- Semantic Colors -->
+    <section class="section">
+      <h2>Semantic <code>--color-{success|warning|error}-*</code></h2>
+      <p>Cores de estado para feedback e acao.</p>
+      <div class="swatch-row">
+        <div class="swatch" style="background:#ECFDF5;color:#15803D">success 50</div>
+        <div class="swatch" style="background:#22C55E;color:#fff">success 500</div>
+        <div class="swatch" style="background:#15803D;color:#fff">success 700</div>
+        <div class="swatch" style="background:#FFF7ED;color:#B45309">warn 50</div>
+        <div class="swatch" style="background:#F59E0B;color:#fff">warn 500</div>
+        <div class="swatch" style="background:#B45309;color:#fff">warn 700</div>
+        <div class="swatch" style="background:#FEF2F2;color:#B91C1C">error 50</div>
+        <div class="swatch" style="background:#EF4444;color:#fff">error 500</div>
+        <div class="swatch" style="background:#B91C1C;color:#fff">error 700</div>
+      </div>
+    </section>
+
+    <!-- Typography -->
+    <section class="section">
+      <h2>Tipografia <code>--font-*</code></h2>
+      <p>Familia, escala de tamanhos, pesos e alturas de linha.</p>
+      <table>
+        <tr><th>Token</th><th>Size</th><th>Weight</th><th>Line Height</th><th>Exemplo</th></tr>
+        <tr><td><code>--font-xs-size</code></td><td>12px</td><td>400</td><td>16px</td><td class="text-xs">The quick brown fox</td></tr>
+        <tr><td><code>--font-sm-size</code></td><td>14px</td><td>400</td><td>20px</td><td class="text-sm">The quick brown fox</td></tr>
+        <tr><td><code>--font-base-size</code></td><td>16px</td><td>400</td><td>24px</td><td class="text-base">The quick brown fox</td></tr>
+        <tr><td><code>--font-lg-size</code></td><td>18px</td><td>500</td><td>28px</td><td class="text-lg">The quick brown fox</td></tr>
+        <tr><td><code>--font-xl-size</code></td><td>24px</td><td>600</td><td>32px</td><td class="text-xl">The quick brown fox</td></tr>
+        <tr><td><code>--font-2xl-size</code></td><td>32px</td><td>600</td><td>40px</td><td class="text-2xl">The quick brown fox</td></tr>
+        <tr><td><code>--font-3xl-size</code></td><td>40px</td><td>700</td><td>48px</td><td class="text-3xl">The quick brown fox</td></tr>
+        <tr><td><code>--font-4xl-size</code></td><td>56px</td><td>700</td><td>64px</td><td class="text-4xl">The quick brown fox</td></tr>
+      </table>
+      <p style="margin-top:12px">Familia: <code>--font-family-primary</code> = <code>'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif</code></p>
+      <p>Mono: <code>--font-family-mono</code> = <code>'JetBrains Mono', 'Cascadia Code', Consolas, monospace</code></p>
+    </section>
+
+    <!-- Spacing -->
+    <section class="section">
+      <h2>Espacamento <code>--space-*</code></h2>
+      <p>Escala de espacamento para margin, padding e gap.</p>
+      <div class="token-grid">
+        <div class="token-card">
+          <div class="spacer-demo" style="width:4px;height:20px"></div>
+          <div class="token-name">--space-2xs</div>
+          <div class="token-value">4px</div>
+        </div>
+        <div class="token-card">
+          <div class="spacer-demo" style="width:8px;height:20px"></div>
+          <div class="token-name">--space-xs</div>
+          <div class="token-value">8px</div>
+        </div>
+        <div class="token-card">
+          <div class="spacer-demo" style="width:12px;height:20px"></div>
+          <div class="token-name">--space-sm</div>
+          <div class="token-value">12px</div>
+        </div>
+        <div class="token-card">
+          <div class="spacer-demo" style="width:16px;height:20px"></div>
+          <div class="token-name">--space-md</div>
+          <div class="token-value">16px</div>
+        </div>
+        <div class="token-card">
+          <div class="spacer-demo" style="width:24px;height:20px"></div>
+          <div class="token-name">--space-lg</div>
+          <div class="token-value">24px</div>
+        </div>
+        <div class="token-card">
+          <div class="spacer-demo" style="width:32px;height:20px"></div>
+          <div class="token-name">--space-xl</div>
+          <div class="token-value">32px</div>
+        </div>
+        <div class="token-card">
+          <div class="spacer-demo" style="width:48px;height:20px"></div>
+          <div class="token-name">--space-2xl</div>
+          <div class="token-value">48px</div>
+        </div>
+        <div class="token-card">
+          <div class="spacer-demo" style="width:64px;height:20px"></div>
+          <div class="token-name">--space-3xl</div>
+          <div class="token-value">64px</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Border Radius -->
+    <section class="section">
+      <h2>Cantos <code>--radius-*</code></h2>
+      <p>Valores de border-radius para componentes.</p>
+      <div class="flex gap-md flex-wrap">
+        <div class="flex flex-col items-center gap-sm">
+          <div class="radius-demo" style="border-radius:0"></div>
+          <code>--radius-none</code>
+        </div>
+        <div class="flex flex-col items-center gap-sm">
+          <div class="radius-demo" style="border-radius:4px"></div>
+          <code>--radius-sm</code>
+        </div>
+        <div class="flex flex-col items-center gap-sm">
+          <div class="radius-demo" style="border-radius:8px"></div>
+          <code>--radius-md</code>
+        </div>
+        <div class="flex flex-col items-center gap-sm">
+          <div class="radius-demo" style="border-radius:12px"></div>
+          <code>--radius-lg</code>
+        </div>
+        <div class="flex flex-col items-center gap-sm">
+          <div class="radius-demo" style="border-radius:16px"></div>
+          <code>--radius-xl</code>
+        </div>
+        <div class="flex flex-col items-center gap-sm">
+          <div class="radius-demo" style="border-radius:999px"></div>
+          <code>--radius-full</code>
+        </div>
+      </div>
+    </section>
+
+    <!-- Shadows -->
+    <section class="section">
+      <h2>Sombras <code>--shadow-*</code></h2>
+      <p>Elevacao visual atraves de box-shadow.</p>
+      <div class="flex gap-lg flex-wrap">
+        <div class="flex flex-col items-center gap-sm">
+          <div class="shadow-demo" style="box-shadow:var(--shadow-xs)"></div>
+          <code>--shadow-xs</code>
+        </div>
+        <div class="flex flex-col items-center gap-sm">
+          <div class="shadow-demo" style="box-shadow:var(--shadow-sm)"></div>
+          <code>--shadow-sm</code>
+        </div>
+        <div class="flex flex-col items-center gap-sm">
+          <div class="shadow-demo" style="box-shadow:var(--shadow-md)"></div>
+          <code>--shadow-md</code>
+        </div>
+        <div class="flex flex-col items-center gap-sm">
+          <div class="shadow-demo" style="box-shadow:var(--shadow-lg)"></div>
+          <code>--shadow-lg</code>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const isDark = html.getAttribute('data-theme') === 'dark';
+      const newTheme = isDark ? 'light' : 'dark';
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('ds-theme', newTheme);
+      document.getElementById('themeIcon').textContent = isDark ? '\u263D' : '\u2600';
+      document.getElementById('themeLabel').textContent = isDark ? 'Escuro' : 'Claro';
+    }
+    (function initTheme() {
+      const saved = localStorage.getItem('ds-theme') || 'dark';
+      if (saved === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+        document.getElementById('themeIcon').textContent = '\u2600';
+        document.getElementById('themeLabel').textContent = 'Claro';
+      }
+    })();
+  </script>
+</body>
+</html>

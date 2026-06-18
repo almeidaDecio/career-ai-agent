@@ -1,0 +1,13 @@
+- landing page
+	- Capa
+	- Plano
+	- Qualidades do AjusteCV
+- tela de login
+	- sucesso
+	- erro
+		- email invalido
+		- senha invalida
+- tela de cadastro (primeira vez)
+- Dashboard (já funcionando) - ajustar para usuário
+
+configurações para vários tipos de profissões

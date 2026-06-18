@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Usage — Design System Azul</title>
+  <link rel="stylesheet" href="azul.css">
+</head>
+<body>
+  <nav class="ds-nav">
+    <div class="ds-nav__inner">
+      <a href="index.html" class="ds-nav__brand">Azul<span>.</span></a>
+      <ul class="ds-nav__links">
+        <li><a href="foundations.html">Foundations</a></li>
+        <li><a href="semantic.html">Semantic</a></li>
+        <li><a href="components.html">Components</a></li>
+        <li><a href="usage.html" class="active">Usage</a></li>
+        <li><a href="demo/index.html">Exemplos</a></li>
+      </ul>
+      <div class="ds-nav__actions">
+        <button class="theme-toggle" onclick="toggleTheme()">
+          <span class="theme-toggle__icon" id="themeIcon">&#x263D;</span>
+          <span id="themeLabel">Escuro</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+  <div class="ds-page">
+    <header class="ds-header">
+      <h1 class="text-3xl">Usage</h1>
+      <p class="text-lg text-secondary">Como instalar e usar o Design System Azul no seu projeto.</p>
+    </header>
+
+    <section class="section">
+      <h2>Instalacao</h2>
+      <p>Copie o arquivo <code>azul.css</code> para seu projeto e inclua no <code>&lt;head&gt;</code>:</p>
+      <pre><code>&lt;link rel="stylesheet" href="azul.css"&gt;</code></pre>
+    </section>
+
+    <section class="section">
+      <h2>Uso basico</h2>
+      <p>As variaveis CSS estao disponiveis globalmente. Use os tokens diretamente no seu CSS:</p>
+      <pre><code>.meu-componente {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  color: var(--color-text-primary);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+}
+
+.btn-personalizado {
+  background: var(--color-brand-primary);
+  color: var(--color-text-inverse);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+}</code></pre>
+    </section>
+
+    <section class="section">
+      <h2>Dark Mode</h2>
+      <p>O tema escuro e ativado com o atributo <code>data-theme="dark"</code> no elemento <code>&lt;html&gt;</code>:</p>
+      <pre><code>&lt;html data-theme="dark"&gt;</code></pre>
+      <p>Para criar um toggle, altere o atributo via JavaScript:</p>
+      <pre><code>document.documentElement.setAttribute('data-theme', 'dark');  // ativar escuro
+document.documentElement.setAttribute('data-theme', 'light'); // ativar claro</code></pre>
+      <p>O estado pode ser salvo no <code>localStorage</code> para persistir a preferencia entre paginas.</p>
+    </section>
+
+    <section class="section">
+      <h2>Multi-brand</h2>
+      <p>Use <code>data-brand="client-a"</code> (ou b, c) para mudar a paleta brand sem alterar o restante:</p>
+      <pre><code>&lt;html data-brand="client-a"&gt;
+&lt;!-- Todas as ocorrencias de --color-brand-primary serao azul --&gt;</code></pre>
+      <p>Variantes disponiveis:</p>
+      <ul style="list-style:disc;padding-left:20px;color:var(--color-text-secondary);line-height:2">
+        <li><code>data-brand="client-a"</code> — Blue (#2563EB)</li>
+        <li><code>data-brand="client-b"</code> — Amber (#F59E0B)</li>
+        <li><code>data-brand="client-c"</code> — Purple (#7C3AED)</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>Alto Contraste</h2>
+      <p>Adicione <code>data-contrast="high"</code> para aumentar o contraste de texto e bordas:</p>
+      <pre><code>&lt;html data-contrast="high"&gt;</code></pre>
+    </section>
+
+    <section class="section">
+      <h2>Classes Utilitarias</h2>
+      <p>O DS inclui classes CSS para uso direto no HTML:</p>
+      <table>
+        <tr><th>Classe</th><th>Efeito</th></tr>
+        <tr><td><code>.text-xs</code> a <code>.text-4xl</code></td><td>Escala tipografica</td></tr>
+        <tr><td><code>.text-semibold</code></td><td>Font-weight 600</td></tr>
+        <tr><td><code>.text-bold</code></td><td>Font-weight 700</td></tr>
+        <tr><td><code>.text-secondary</code></td><td>Cor secundaria</td></tr>
+        <tr><td><code>.flex</code></td><td><code>display: flex</code></td></tr>
+        <tr><td><code>.flex-col</code></td><td><code>flex-direction: column</code></td></tr>
+        <tr><td><code>.flex-wrap</code></td><td><code>flex-wrap: wrap</code></td></tr>
+        <tr><td><code>.items-center</code></td><td><code>align-items: center</code></td></tr>
+        <tr><td><code>.gap-sm</code></td><td><code>gap: var(--space-sm)</code></td></tr>
+        <tr><td><code>.gap-md</code></td><td><code>gap: var(--space-md)</code></td></tr>
+        <tr><td><code>.btn</code> + variante</td><td>Componente botao</td></tr>
+        <tr><td><code>.badge</code> + variante</td><td>Componente badge</td></tr>
+        <tr><td><code>.input</code></td><td>Estilo de input</td></tr>
+        <tr><td><code>.avatar</code></td><td>Componente avatar</td></tr>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Exemplo completo</h2>
+      <pre><code>&lt;!DOCTYPE html&gt;
+&lt;html lang="pt-BR" data-theme="dark"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+  &lt;title&gt;Meu Projeto&lt;/title&gt;
+  &lt;link rel="stylesheet" href="azul.css"&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;nav style="background:var(--color-bg-elevated);padding:16px 24px;
+             border-bottom:1px solid var(--color-border-default)"&gt;
+    &lt;strong&gt;Meu App&lt;/strong&gt;
+  &lt;/nav&gt;
+  &lt;main style="padding:32px;max-width:800px;margin:0 auto"&gt;
+    &lt;h1 class="text-2xl"&gt;Bem-vindo!&lt;/h1&gt;
+    &lt;p class="text-secondary"&gt;Este e um projeto usando o Design System Azul.&lt;/p&gt;
+    &lt;button class="btn btn--primary"&gt;Comecar&lt;/button&gt;
+  &lt;/main&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+    </section>
+  </div>
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const isDark = html.getAttribute('data-theme') === 'dark';
+      const newTheme = isDark ? 'light' : 'dark';
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('ds-theme', newTheme);
+      document.getElementById('themeIcon').textContent = isDark ? '\u263D' : '\u2600';
+      document.getElementById('themeLabel').textContent = isDark ? 'Escuro' : 'Claro';
+    }
+    (function initTheme() {
+      const saved = localStorage.getItem('ds-theme') || 'dark';
+      if (saved === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+        document.getElementById('themeIcon').textContent = '\u2600';
+        document.getElementById('themeLabel').textContent = 'Claro';
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Semantic — Design System Azul</title>
+  <link rel="stylesheet" href="azul.css">
+</head>
+<body>
+  <nav class="ds-nav">
+    <div class="ds-nav__inner">
+      <a href="index.html" class="ds-nav__brand">Azul<span>.</span></a>
+      <ul class="ds-nav__links">
+        <li><a href="foundations.html">Foundations</a></li>
+        <li><a href="semantic.html" class="active">Semantic</a></li>
+        <li><a href="components.html">Components</a></li>
+        <li><a href="usage.html">Usage</a></li>
+        <li><a href="demo/index.html">Exemplos</a></li>
+      </ul>
+      <div class="ds-nav__actions">
+        <button class="theme-toggle" onclick="toggleTheme()">
+          <span class="theme-toggle__icon" id="themeIcon">&#x263D;</span>
+          <span id="themeLabel">Escuro</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+  <div class="ds-page">
+    <header class="ds-header">
+      <h1 class="text-3xl">Semantic Tokens</h1>
+      <p class="text-lg text-secondary">Cores com proposito: texto, superficie, borda, brand e estados interativos.</p>
+    </header>
+
+    <section class="section">
+      <h2>Text <code>--color-text-*</code></h2>
+      <p>Papeis de cor para texto em diferentes niveis de hierarquia.</p>
+      <div class="token-grid">
+        <div class="token-card">
+          <div class="token-preview flex-center" style="background:var(--color-text-primary);color:var(--color-bg-canvas);font-size:12px;font-weight:600">Aa</div>
+          <div class="token-name">--color-text-primary</div>
+          <div class="token-value">var(--color-neutral-950)</div>
+        </div>
+        <div class="token-card">
+          <div class="token-preview flex-center" style="background:var(--color-text-secondary);color:var(--color-bg-canvas);font-size:12px;font-weight:600">Aa</div>
+          <div class="token-name">--color-text-secondary</div>
+          <div class="token-value">var(--color-neutral-600)</div>
+        </div>
+        <div class="token-card">
+          <div class="token-preview flex-center" style="background:var(--color-text-tertiary);color:var(--color-bg-canvas);font-size:12px;font-weight:600">Aa</div>
+          <div class="token-name">--color-text-tertiary</div>
+          <div class="token-value">var(--color-neutral-400)</div>
+        </div>
+        <div class="token-card">
+          <div class="token-preview flex-center" style="background:var(--color-text-disabled);color:var(--color-bg-canvas);font-size:12px;font-weight:600">Aa</div>
+          <div class="token-name">--color-text-disabled</div>
+          <div class="token-value">var(--color-neutral-400)</div>
+        </div>
+        <div class="token-card">
+          <div class="token-preview flex-center" style="background:var(--color-text-inverse);color:var(--color-brand-500);font-size:12px;font-weight:600">Aa</div>
+          <div class="token-name">--color-text-inverse</div>
+          <div class="token-value">#0A0C10</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Background <code>--color-bg-*</code></h2>
+      <p>Camadas de fundo para criar profundidade.</p>
+      <div class="token-grid">
+        <div class="token-card">
+          <div class="token-preview" style="background:var(--color-bg-canvas)"></div>
+          <div class="token-name">--color-bg-canvas</div>
+          <div class="token-value">fundo mais externo</div>
+        </div>
+        <div class="token-card">
+          <div class="token-preview" style="background:var(--color-bg-default)"></div>
+          <div class="token-name">--color-bg-default</div>
+          <div class="token-value">fundo padrao de pagina</div>
+        </div>
+        <div class="token-card">
+          <div class="token-preview" style="background:var(--color-bg-surface)"></div>
+          <div class="token-name">--color-bg-surface</div>
+          <div class="token-value">cards, dropdowns, modais</div>
+        </div>
+        <div class="token-card">
+          <div class="token-preview" style="background:var(--color-bg-surface-hover)"></div>
+          <div class="token-name">--color-bg-surface-hover</div>
+          <div class="token-value">hover de superficie</div>
+        </div>
+        <div class="token-card">
+          <div class="token-preview" style="background:var(--color-bg-elevated)"></div>
+          <div class="token-name">--color-bg-elevated</div>
+          <div class="token-value">nav bars, side panels</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Border <code>--color-border-*</code></h2>
+      <p>Bordas com diferentes niveis de enfase.</p>
+      <div class="token-grid">
+        <div class="token-card">
+          <div class="token-preview" style="border:2px solid var(--color-border-subtle);background:transparent"></div>
+          <div class="token-name">--color-border-subtle</div>
+          <div class="token-value">bordas de baixa enfase</div>
+        </div>
+        <div class="token-card">
+          <div class="token-preview" style="border:2px solid var(--color-border-default);background:transparent"></div>
+          <div class="token-name">--color-border-default</div>
+          <div class="token-value">borda padrao</div>
+        </div>
+        <div class="token-card">
+          <div class="token-preview" style="border:2px solid var(--color-border-hover);background:transparent"></div>
+          <div class="token-name">--color-border-hover</div>
+          <div class="token-value">hover state</div>
+        </div>
+        <div class="token-card">
+          <div class="token-preview" style="border:2px solid var(--color-border-strong);background:transparent"></div>
+          <div class="token-name">--color-border-strong</div>
+          <div class="token-value">bordas de alta enfase</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Brand <code>--color-brand-*</code></h2>
+      <p>Tokens semanticos da marca para acao e destaque.</p>
+      <div class="token-grid">
+        <div class="token-card">
+          <div class="token-preview" style="background:var(--color-brand-primary)"></div>
+          <div class="token-name">--color-brand-primary</div>
+          <div class="token-value">botoes, links, destaque</div>
+        </div>
+        <div class="token-card">
+          <div class="token-preview" style="background:var(--color-brand-hover)"></div>
+          <div class="token-name">--color-brand-hover</div>
+          <div class="token-value">hover de elemento brand</div>
+        </div>
+        <div class="token-card">
+          <div class="token-preview" style="background:var(--color-brand-pressed)"></div>
+          <div class="token-name">--color-brand-pressed</div>
+          <div class="token-value">active/pressed state</div>
+        </div>
+        <div class="token-card">
+          <div class="token-preview" style="background:var(--color-brand-light)"></div>
+          <div class="token-name">--color-brand-light</div>
+          <div class="token-value">background sutil brand</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Multi-brand</h2>
+      <p>O DS suporta troca de marca via atributo <code>data-brand</code>. Basta adicionar ao HTML e as cores brand sao substituidas.</p>
+      <div class="flex gap-md flex-wrap">
+        <div class="demo-box" style="flex:1;min-width:160px">
+          <div class="demo-label">Padrao (Teal)</div>
+          <button class="btn btn--primary">Primary</button>
+        </div>
+        <div class="demo-box" style="flex:1;min-width:160px" data-brand="client-a">
+          <div class="demo-label">data-brand="client-a" (Blue)</div>
+          <button class="btn btn--primary">Primary</button>
+        </div>
+        <div class="demo-box" style="flex:1;min-width:160px" data-brand="client-b">
+          <div class="demo-label">data-brand="client-b" (Amber)</div>
+          <button class="btn btn--primary">Primary</button>
+        </div>
+        <div class="demo-box" style="flex:1;min-width:160px" data-brand="client-c">
+          <div class="demo-label">data-brand="client-c" (Purple)</div>
+          <button class="btn btn--primary">Primary</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Dark Mode <code>data-theme="dark"</code></h2>
+      <p>Toggle no canto superior direito alterna entre claro e escuro. A preferencia fica salva no <code>localStorage</code>.</p>
+      <p>Todas as superficies, textos e bordas se invertem mantendo a paleta brand intacta.</p>
+    </section>
+
+    <section class="section">
+      <h2>Alto Contraste <code>data-contrast="high"</code></h2>
+      <p>Adicione <code>data-contrast="high"</code> ao HTML para forçar maximo contraste entre texto e fundo.</p>
+      <pre><code>&lt;html data-contrast="high"&gt;</code></pre>
+    </section>
+  </div>
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const isDark = html.getAttribute('data-theme') === 'dark';
+      const newTheme = isDark ? 'light' : 'dark';
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('ds-theme', newTheme);
+      document.getElementById('themeIcon').textContent = isDark ? '\u263D' : '\u2600';
+      document.getElementById('themeLabel').textContent = isDark ? 'Escuro' : 'Claro';
+    }
+    (function initTheme() {
+      const saved = localStorage.getItem('ds-theme') || 'dark';
+      if (saved === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+        document.getElementById('themeIcon').textContent = '\u2600';
+        document.getElementById('themeLabel').textContent = 'Claro';
+      }
+    })();
+  </script>
+</body>
+</html>

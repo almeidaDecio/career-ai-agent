@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AjustaCV — Apresentação</title>
+<style>
+  :root {
+    /* Brand */
+    --brand-50: #E6FFFC;
+    --brand-100: #BDFCF6;
+    --brand-200: #8AF6EC;
+    --brand-300: #56F0E0;
+    --brand-400: #2FE7D5;
+    --brand-500: #22D3C5;
+    --brand-600: #19B5A9;
+    --brand-700: #148E84;
+    --brand-800: #106B64;
+    --brand-900: #0B4945;
+
+    /* Neutral */
+    --neutral-0: #FFFFFF;
+    --neutral-50: #F8FAFC;
+    --neutral-100: #F1F5F9;
+    --neutral-200: #E2E8F0;
+    --neutral-300: #CBD5E1;
+    --neutral-400: #94A3B8;
+    --neutral-500: #64748B;
+    --neutral-600: #475569;
+    --neutral-700: #334155;
+    --neutral-800: #1E293B;
+    --neutral-900: #0F172A;
+    --neutral-950: #020617;
+
+    /* Background Dark */
+    --bg-canvas: #05070B;
+    --bg-default: #0A0C10;
+    --bg-surface: #111318;
+    --bg-surface-hover: #171A20;
+    --bg-elevated: #1B1F27;
+
+    /* Border */
+    --border-subtle: #1E222B;
+    --border-default: #2A303B;
+    --border-strong: #3B4453;
+
+    /* Text */
+    --text-primary: #FFFFFF;
+    --text-secondary: #C5CDD8;
+    --text-tertiary: #94A3B8;
+    --text-disabled: #64748B;
+    --text-inverse: #0A0C10;
+
+    /* Success */
+    --success-50: #ECFDF5;
+    --success-100: #D1FAE5;
+    --success-500: #22C55E;
+    --success-600: #16A34A;
+    --success-700: #15803D;
+
+    /* Warning */
+    --warning-50: #FFF7ED;
+    --warning-100: #FFEDD5;
+    --warning-500: #F59E0B;
+    --warning-600: #D97706;
+    --warning-700: #B45309;
+
+    /* Error */
+    --error-50: #FEF2F2;
+    --error-100: #FEE2E2;
+    --error-500: #EF4444;
+    --error-600: #DC2626;
+    --error-700: #B91C1C;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg-canvas);
+    color: var(--text-primary);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  .slide-container {
+    display: flex;
+    transition: transform .5s cubic-bezier(.22,1,.36,1);
+    height: 100vh;
+  }
+
+  .slide {
+    min-width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 64px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slide::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -30%;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(34,211,197,.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .slide-number {
+    position: absolute;
+    bottom: 32px;
+    right: 48px;
+    font-size: 14px;
+    color: var(--text-tertiary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .slide-title {
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: -.02em;
+    line-height: 1.15;
+    margin-bottom: 16px;
+    max-width: 800px;
+    text-align: center;
+  }
+
+  .slide-subtitle {
+    font-size: 20px;
+    color: var(--text-secondary);
+    max-width: 640px;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  .accent { color: var(--brand-500); }
+  .accent-gradient {
+    background: linear-gradient(135deg, var(--brand-400), var(--brand-600));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    max-width: 900px;
+    width: 100%;
+    margin-top: 40px;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 24px;
+    max-width: 1000px;
+    width: 100%;
+    margin-top: 40px;
+  }
+
+  .card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 16px;
+    padding: 28px 24px;
+    transition: all .2s;
+  }
+
+  .card:hover {
+    border-color: var(--brand-500);
+    background: var(--bg-surface-hover);
+  }
+
+  .card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(34,211,197,.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    color: var(--brand-500);
+    font-size: 20px;
+  }
+
+  .card h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+  }
+
+  .card p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .diagram-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 48px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .diagram-step {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: 12px;
+    padding: 20px 24px;
+    text-align: center;
+    min-width: 140px;
+  }
+
+  .diagram-step .step-num {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--brand-500);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+
+  .diagram-step .step-label {
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .diagram-arrow {
+    color: var(--brand-500);
+    font-size: 20px;
+    font-weight: 300;
+  }
+
+  .nav-bar {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: 100px;
+    padding: 8px 20px;
+    z-index: 100;
+  }
+
+  .nav-bar button {
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all .15s;
+    font-family: inherit;
+    line-height: 1;
+  }
+
+  .nav-bar button:hover {
+    color: var(--text-primary);
+    background: var(--bg-surface-hover);
+  }
+
+  .nav-dots {
+    display: flex;
+    gap: 6px;
+    margin: 0 8px;
+  }
+
+  .nav-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border-strong);
+    transition: all .3s;
+    cursor: pointer;
+    border: none;
+    padding: 0;
+  }
+
+  .nav-dot.active {
+    background: var(--brand-500);
+    width: 24px;
+    border-radius: 4px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: absolute;
+    top: 32px;
+    left: 48px;
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 18px;
+  }
+
+  .logo-mark {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--brand-400), var(--brand-600));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-inverse);
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .3px;
+  }
+  .tag--brand { background: rgba(34,211,197,.15); color: var(--brand-500); }
+  .tag--success { background: rgba(34,197,94,.15); color: var(--success-500); }
+  .tag--warning { background: rgba(245,158,11,.15); color: var(--warning-500); }
+
+  .title-slide .slide-title {
+    font-size: 64px;
+    margin-bottom: 20px;
+  }
+
+  .title-slide .slide-subtitle {
+    font-size: 22px;
+    max-width: 560px;
+  }
+
+  .title-slide .diagram-row {
+    margin-top: 64px;
+  }
+
+  .stat-row {
+    display: flex;
+    gap: 48px;
+    margin-top: 48px;
+    justify-content: center;
+  }
+
+  .stat-item {
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 40px;
+    font-weight: 800;
+    color: var(--brand-500);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+
+  .benefit-list {
+    max-width: 600px;
+    margin-top: 32px;
+    text-align: left;
+  }
+
+  .benefit-list li {
+    list-style: none;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-secondary);
+  }
+
+  .benefit-list li::before {
+    content: '✓';
+    color: var(--success-500);
+    font-weight: 700;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .tech-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 32px;
+    max-width: 700px;
+  }
+
+  .tech-chip {
+    padding: 10px 20px;
+    border-radius: 100px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all .2s;
+  }
+
+  .tech-chip:hover {
+    border-color: var(--brand-500);
+    color: var(--brand-500);
+  }
+
+  .arch-flow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 32px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .arch-box {
+    padding: 16px 24px;
+    border-radius: 12px;
+    border: 1px solid var(--border-default);
+    background: var(--bg-surface);
+    text-align: center;
+    min-width: 130px;
+  }
+
+  .arch-box .arch-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--text-tertiary);
+    margin-bottom: 4px;
+  }
+
+  .arch-box .arch-value {
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .arch-box.highlight {
+    border-color: var(--brand-500);
+    background: rgba(34,211,197,.08);
+  }
+
+  .arch-arrow {
+    color: var(--brand-500);
+    font-size: 16px;
+  }
+
+  @media (max-width: 768px) {
+    .slide { padding: 40px 24px; }
+    .slide-title { font-size: 28px; }
+    .title-slide .slide-title { font-size: 36px; }
+    .title-slide .slide-subtitle { font-size: 16px; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; gap: 16px; }
+    .stat-row { gap: 24px; }
+    .stat-value { font-size: 28px; }
+    .diagram-step { min-width: 100px; padding: 14px 16px; }
+    .nav-bar { gap: 8px; padding: 6px 14px; }
+    .logo { left: 24px; top: 20px; }
+    .arch-box { min-width: 100px; padding: 12px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="slide-container" id="slides">
+
+  <!-- Slide 1: Title -->
+  <div class="slide title-slide">
+    <div class="logo">
+      <div class="logo-mark">A</div>
+      <span>Ajusta<span class="accent">CV</span></span>
+    </div>
+    <div class="slide-title">
+      Curriculos que<br><span class="accent-gradient">abrem portas</span>
+    </div>
+    <div class="slide-subtitle">
+      Otimizacao automatica de curriculos com IA para profissionais de Product Design
+    </div>
+    <div class="stat-row">
+      <div class="stat-item">
+        <div class="stat-value">3s</div>
+        <div class="stat-label">analise por vaga</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">+95%</div>
+        <div class="stat-label">de match ATS</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">100%</div>
+        <div class="stat-label">offline & seguro</div>
+      </div>
+    </div>
+    <div class="slide-number">01 / 08</div>
+  </div>
+
+  <!-- Slide 2: Problem -->
+  <div class="slide">
+    <div class="logo">
+      <div class="logo-mark">A</div>
+      <span>Ajusta<span class="accent">CV</span></span>
+    </div>
+    <span class="tag tag--brand" style="margin-bottom:20px">O Problema</span>
+    <div class="slide-title">
+      Candidaturas sem direcao<br>perdem <span class="accent">tempo e oportunidades</span>
+    </div>
+    <div class="slide-subtitle" style="margin-bottom:8px">
+      Profissionais de Design enviam dezenas de curriculos genericos e recebem poucos retornos.
+    </div>
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-icon">&#128269;</div>
+        <h3>Sem adequacao</h3>
+        <p>CV padrao ignorando palavras-chave e requisitos especificos de cada vaga.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">&#9203;</div>
+        <h3>Processo manual</h3>
+        <p>Ajustar curriculo para cada candidatura consome horas preciosas.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">&#128200;</div>
+        <h3>Sem visibilidade</h3>
+        <p>Sem acompanhamento de candidaturas, e dificil saber o que funciona.</p>
+      </div>
+    </div>
+    <div class="slide-number">02 / 08</div>
+  </div>
+
+  <!-- Slide 3: Solution -->
+  <div class="slide">
+    <div class="logo">
+      <div class="logo-mark">A</div>
+      <span>Ajusta<span class="accent">CV</span></span>
+    </div>
+    <span class="tag tag--success" style="margin-bottom:20px">A Solucao</span>
+    <div class="slide-title">
+      CV otimizado para cada vaga<br>em <span class="accent">segundos</span>
+    </div>
+    <div class="slide-subtitle">
+      Cole os requisitos, o AjustaCV extrai as palavras-chave, analisa seu curriculo e gera uma versao sob medida — com scoring de match em tempo real.
+    </div>
+    <div class="diagram-row">
+      <div class="diagram-step">
+        <div class="step-num">1</div>
+        <div class="step-label">Cole a vaga</div>
+      </div>
+      <span class="diagram-arrow">&#8594;</span>
+      <div class="diagram-step">
+        <div class="step-num">2</div>
+        <div class="step-label">Extracao IA</div>
+      </div>
+      <span class="diagram-arrow">&#8594;</span>
+      <div class="diagram-step">
+        <div class="step-num">3</div>
+        <div class="step-label">Match CV</div>
+      </div>
+      <span class="diagram-arrow">&#8594;</span>
+      <div class="diagram-step">
+        <div class="step-num">4</div>
+        <div class="step-label">CV Otimizado</div>
+      </div>
+      <span class="diagram-arrow">&#8594;</span>
+      <div class="diagram-step">
+        <div class="step-num">5</div>
+        <div class="step-label">Candidatar</div>
+      </div>
+    </div>
+    <div class="slide-number">03 / 08</div>
+  </div>
+
+  <!-- Slide 4: Features -->
+  <div class="slide">
+    <div class="logo">
+      <div class="logo-mark">A</div>
+      <span>Ajusta<span class="accent">CV</span></span>
+    </div>
+    <span class="tag tag--brand" style="margin-bottom:20px">Funcionalidades</span>
+    <div class="slide-title">
+      Tudo que voce precisa para<br><span class="accent">acelerar</span> suas candidaturas
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-icon">&#9878;</div>
+        <h3>Match Score Inteligente</h3>
+        <p>Comparacao automatica entre curriculo e requisitos da vaga com pontuacao em tempo real e destaque de skills correspondentes.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">&#9997;</div>
+        <h3>Geracao Automatica de CV</h3>
+        <p>CV otimizado com skills reordenadas, resumo ajustado e experiencias destacadas conforme a vaga alvo.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">&#128202;</div>
+        <h3>Kanban de Candidaturas</h3>
+        <p>Pipeline visual com colunas de Triagem, Aplicadas, Favoritas, Entrevista e Finalizada — arraste e solte.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">&#128274;</div>
+        <h3>100% Offline & Privado</h3>
+        <p>Tudo roda local via Ollama. Seus dados nunca saem da maquina. Sem nuvem, sem assinatura, sem risco.</p>
+      </div>
+    </div>
+    <div class="slide-number">04 / 08</div>
+  </div>
+
+  <!-- Slide 5: Architecture -->
+  <div class="slide">
+    <div class="logo">
+      <div class="logo-mark">A</div>
+      <span>Ajusta<span class="accent">CV</span></span>
+    </div>
+    <span class="tag tag--brand" style="margin-bottom:20px">Arquitetura</span>
+    <div class="slide-title">
+      Como os dados <span class="accent">fluem</span>
+    </div>
+    <div class="arch-flow">
+      <div class="arch-box">
+        <div class="arch-label">Entrada</div>
+        <div class="arch-value">Texto da Vaga</div>
+      </div>
+      <span class="arch-arrow">&#8594;</span>
+      <div class="arch-box highlight">
+        <div class="arch-label">IA</div>
+        <div class="arch-value">Ollama (LLaMA)</div>
+      </div>
+      <span class="arch-arrow">&#8594;</span>
+      <div class="arch-box">
+        <div class="arch-label">Extrator</div>
+        <div class="arch-value">Skills & Requisitos</div>
+      </div>
+      <span class="arch-arrow">&#8594;</span>
+      <div class="arch-box highlight">
+        <div class="arch-label">Matcher</div>
+        <div class="arch-value">Score de Compatibilidade</div>
+      </div>
+      <span class="arch-arrow">&#8594;</span>
+      <div class="arch-box">
+        <div class="arch-label">Gerador</div>
+        <div class="arch-value">CV Otimizado</div>
+      </div>
+    </div>
+    <div class="grid-3" style="max-width:800px;margin-top:40px">
+      <div class="card" style="text-align:center;padding:20px">
+        <div class="arch-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-tertiary);margin-bottom:4px">Frontend</div>
+        <div style="font-size:14px;font-weight:500">HTML + CSS + JS</div>
+        <div style="font-size:12px;color:var(--text-tertiary);margin-top:4px">SPA com design system</div>
+      </div>
+      <div class="card" style="text-align:center;padding:20px">
+        <div class="arch-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-tertiary);margin-bottom:4px">Backend</div>
+        <div style="font-size:14px;font-weight:500">Node.js + Express</div>
+        <div style="font-size:12px;color:var(--text-tertiary);margin-top:4px">API REST + SQLite</div>
+      </div>
+      <div class="card" style="text-align:center;padding:20px">
+        <div class="arch-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-tertiary);margin-bottom:4px">Banco</div>
+        <div style="font-size:14px;font-weight:500">SQLite</div>
+        <div style="font-size:12px;color:var(--text-tertiary);margin-top:4px">Sem dependencia externa</div>
+      </div>
+    </div>
+    <div class="slide-number">05 / 08</div>
+  </div>
+
+  <!-- Slide 6: Tech Stack -->
+  <div class="slide">
+    <div class="logo">
+      <div class="logo-mark">A</div>
+      <span>Ajusta<span class="accent">CV</span></span>
+    </div>
+    <span class="tag tag--brand" style="margin-bottom:20px">Stack</span>
+    <div class="slide-title">
+      Tecnologias <span class="accent">utilizadas</span>
+    </div>
+    <div class="tech-grid">
+      <span class="tech-chip">Node.js</span>
+      <span class="tech-chip">Express</span>
+      <span class="tech-chip">SQLite</span>
+      <span class="tech-chip">Ollama</span>
+      <span class="tech-chip">LLaMA 3</span>
+      <span class="tech-chip">HTML5</span>
+      <span class="tech-chip">CSS3</span>
+      <span class="tech-chip">Vanilla JS</span>
+      <span class="tech-chip">Fetch API</span>
+      <span class="tech-chip">Flexbox / Grid</span>
+      <span class="tech-chip">Drag & Drop</span>
+      <span class="tech-chip">Design Tokens</span>
+    </div>
+    <div style="margin-top:48px;text-align:center">
+      <div style="font-size:14px;color:var(--text-secondary);line-height:1.6">
+        <strong style="color:var(--text-primary)">Zero dependencias de frontend.</strong><br>
+        Sem React, sem bundlers, sem node_modules no navegador.<br>
+        Tudo vanilla, rapido e leve.
+      </div>
+    </div>
+    <div class="slide-number">06 / 08</div>
+  </div>
+
+  <!-- Slide 7: Results -->
+  <div class="slide">
+    <div class="logo">
+      <div class="logo-mark">A</div>
+      <span>Ajusta<span class="accent">CV</span></span>
+    </div>
+    <span class="tag tag--success" style="margin-bottom:20px">Resultados</span>
+    <div class="slide-title">
+      Impacto <span class="accent">real</span>
+    </div>
+    <div class="stat-row">
+      <div class="stat-item">
+        <div class="stat-value">5&times;</div>
+        <div class="stat-label">mais retorno</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">-90%</div>
+        <div class="stat-label">tempo por CV</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">+40%</div>
+        <div class="stat-label">match ATS</div>
+      </div>
+    </div>
+    <div class="benefit-list">
+      <li>CV otimizado automaticamente para cada vaga em segundos</li>
+      <li>Score de compatibilidade visivel antes de candidatar</li>
+      <li>Skills reordenadas conforme prioridade da vaga</li>
+      <li>Pipeline completo de candidaturas com status visual</li>
+      <li>Exportacao em PDF pronta para envio</li>
+      <li>Dados 100% locais — sem servidores externos</li>
+    </div>
+    <div class="slide-number">07 / 08</div>
+  </div>
+
+  <!-- Slide 8: Next Steps -->
+  <div class="slide">
+    <div class="logo">
+      <div class="logo-mark">A</div>
+      <span>Ajusta<span class="accent">CV</span></span>
+    </div>
+    <span class="tag tag--warning" style="margin-bottom:20px">Proximos Passos</span>
+    <div class="slide-title">
+      O que vem <span class="accent">por ai</span>
+    </div>
+    <div class="grid-2" style="max-width:800px">
+      <div class="card">
+        <div class="card-icon">&#128221;</div>
+        <h3>Multiplos CVs Base</h3>
+        <p>Suporte a varios perfis de curriculo para diferentes areas de atuacao.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">&#128260;</div>
+        <h3>Editor Visual de CV</h3>
+        <p>Interface drag-and-drop para ajustar secoes, ordem e conteudo do CV gerado.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">&#128200;</div>
+        <h3>Analytics</h3>
+        <p>Dashboard com metricas de candidaturas, taxa de match por empresa e historico.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">&#128279;</div>
+        <h3>Integracoes</h3>
+        <p>Conexao direta com Gupy, LinkedIn e outras plataformas de emprego.</p>
+      </div>
+    </div>
+    <div style="margin-top:40px;text-align:center">
+      <span style="display:inline-block;padding:12px 32px;border-radius:100px;background:var(--brand-500);color:var(--text-inverse);font-weight:600;font-size:16px">
+        github.com/anomalyco/ajustacv
+      </span>
+    </div>
+    <div class="slide-number">08 / 08</div>
+  </div>
+
+</div>
+
+<div class="nav-bar">
+  <button onclick="prevSlide()">&#8592;</button>
+  <div class="nav-dots" id="dots"></div>
+  <button onclick="nextSlide()">&#8594;</button>
+  <span style="color:var(--text-tertiary);font-size:13px;font-variant-numeric:tabular-nums" id="counter"></span>
+</div>
+
+<script>
+  let current = 0;
+  const total = document.querySelectorAll('.slide').length;
+  const container = document.getElementById('slides');
+  const dotsEl = document.getElementById('dots');
+  const counterEl = document.getElementById('counter');
+
+  for (let i = 0; i < total; i++) {
+    const dot = document.createElement('button');
+    dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+    dot.onclick = () => goTo(i);
+    dotsEl.appendChild(dot);
+  }
+
+  function goTo(i) {
+    current = Math.max(0, Math.min(i, total - 1));
+    container.style.transform = `translateX(-${current * 100}vw)`;
+    document.querySelectorAll('.nav-dot').forEach((d, j) => {
+      d.className = 'nav-dot' + (j === current ? ' active' : '');
+    });
+    counterEl.textContent = `${current + 1} / ${total}`;
+  }
+
+  function nextSlide() { goTo(current + 1); }
+  function prevSlide() { goTo(current - 1); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextSlide();
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevSlide();
+  });
+
+  goTo(0);
+</script>
+</body>
+</html>

@@ -436,7 +436,7 @@ app.post('/api/jobs/:id/save-cv-file', async (req, res) => {
 
     const summary = `${cv.summary}`;
 
-    let output = `${cv.name}\nProduct Designer | Designer UX/UI | Service Designer | Designer de Produtos\n\ndecio.almeida.1969@gmail.com | +55 11 99376-3161\nlinkedin.com/in/décio-d-almeida-74186621\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nRESUMO PROFISSIONAL\n\n${summary}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nCOMPETÊNCIAS\n\n${cv.skills_ordered.join(' · ')}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nEXPERIÊNCIA PROFISSIONAL\n\n`;
+    let output = `${cv.name}\nProduct Designer | Designer UX/UI | Service Designer | Designer de Produtos\n\ndecio.almeida.product.design@gmail.com | +55 11 99376-3161\nlinkedin.com/in/décio-d-almeida-74186621\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nRESUMO PROFISSIONAL\n\n${summary}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nCOMPETÊNCIAS\n\n${cv.skills_ordered.join(' · ')}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nEXPERIÊNCIA PROFISSIONAL\n\n`;
 
     (cv.experience || []).forEach((exp, i) => {
       output += `${exp.company} — ${exp.role}${exp.period ? ' | ' + exp.period : ''}\n\n`;
@@ -586,7 +586,7 @@ function extractJson(raw) {
 // Extrair vaga com Ollama e salvar
 app.post('/api/extract', async (req, res) => {
   try {
-    const { empresa_context, requisitos, job_text } = req.body;
+    const { empresa_nome, empresa_context, requisitos, job_text, applied_date } = req.body;
     const requisitosText = requisitos || job_text || '';
     if (!requisitosText) return res.status(400).json({ error: 'Campo requisitos é obrigatório' });
 
@@ -635,9 +635,9 @@ ${requisitosText}
     const result = db.prepare(`INSERT INTO vagas
       (job_title, company, seniority, experience_years_min, location,
        required_skills, nice_to_have_skills, responsibilities, tools, ats_keywords,
-       job_text, matching_score, empresa_context, requisitos)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
-      v.job_title || null, v.company || null, v.seniority || null,
+       job_text, matching_score, empresa_context, requisitos, applied_date)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+      v.job_title || null, empresa_nome || v.company || null, v.seniority || null,
       v.experience_years_min || null, v.location || null,
       JSON.stringify(v.required_skills || []), JSON.stringify(v.nice_to_have_skills || []),
       JSON.stringify(v.responsibilities || []), JSON.stringify(v.tools || []),
@@ -645,7 +645,8 @@ ${requisitosText}
       fullText,
       matchingScore,
       empresa_context || null,
-      requisitosText
+      requisitosText,
+      applied_date || null
     );
 
     res.json({ success: true, id: result.lastInsertRowid, data: v, matching_score: matchingScore });
@@ -750,7 +751,7 @@ function checkPort(port) {
     const tester = net.createServer()
       .once('error', () => resolve(false))
       .once('listening', () => tester.close(() => resolve(true)))
-      .listen(port, '127.0.0.1');
+      .listen(port, '0.0.0.0');
   });
 }
 
@@ -765,8 +766,18 @@ async function startServer() {
       process.exit(1);
     }
   }
-  const server = app.listen(PORT, '127.0.0.1', () => {
-    console.log(`API rodando em http://127.0.0.1:${PORT}`);
+  const server = app.listen(PORT, '0.0.0.0', () => {
+    const { networkInterfaces } = require('os');
+    const nets = networkInterfaces();
+    let ip = '127.0.0.1';
+    for (const name of Object.keys(nets)) {
+      for (const net of nets[name]) {
+        if (net.family === 'IPv4' && !net.internal) { ip = net.address; break; }
+      }
+    }
+    console.log(`API rodando em:`);
+    console.log(`  Local:    http://127.0.0.1:${PORT}`);
+    console.log(`  Rede:     http://${ip}:${PORT}`);
   }).on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
       console.error(`❌ Porta ${PORT} ocupada. Rode: npx kill-port ${PORT}`);

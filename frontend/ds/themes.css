@@ -1,114 +1,107 @@
 /* ============================================================
-   THEMES — Dark/Light mode + Multi-brand
+   THEMES — Light mode + Multi-brand + High Contrast
    ============================================================
-   O tema claro (default) ja esta definido em :root no tokens.css.
+   O tema escuro (default) esta definido em tokens.css.
    Aqui fazemos apenas os overrides.
 
    Uso:
-     <html data-theme="dark">          → dark mode
+     <html data-theme="light">         → light mode
      <html data-brand="client-a">      → brand azul
-     <html data-theme="dark" data-brand="client-b"> → combinado
+     <html data-contrast="high">       → alto contraste
    ============================================================ */
 
 /* --------------------------------------------------
-   DARK MODE
+   LIGHT MODE
    -------------------------------------------------- */
 
-[data-theme="dark"] {
-  --color-surface-primary:   #1A1A2E;
-  --color-surface-secondary: #16162A;
-  --color-surface-tertiary:  #121225;
+[data-theme="light"] {
+  --color-brand-primary: #0B7D73;
+  --color-brand-hover:   #0A6C63;
+  --color-brand-pressed: #085B54;
+  --color-brand-light:   rgba(11,125,115,.1);
 
-  --color-text-primary:   #F0F0F5;
-  --color-text-secondary: #A0A0B8;
-  --color-text-disabled:  #5A5A72;
-  --color-text-inverse:   #0D0F14;
+  --color-neutral-50:   #F8FAFC;
+  --color-neutral-100:  #F1F5F9;
+  --color-neutral-200:  #E2E8F0;
+  --color-neutral-300:  #CBD5E1;
+  --color-neutral-400:  #94A3B8;
+  --color-neutral-500:  #64748B;
+  --color-neutral-600:  #475569;
+  --color-neutral-700:  #334155;
+  --color-neutral-800:  #1E293B;
+  --color-neutral-900:  #0F172A;
+  --color-neutral-950:  #020617;
 
-  --color-neutral-50:   #0D0F14;
-  --color-neutral-100:  #121225;
-  --color-neutral-200:  #16162A;
-  --color-neutral-300:  #1A1A2E;
-  --color-neutral-400:  #2A2A45;
-  --color-neutral-500:  #3A3A55;
-  --color-neutral-600:  #5A5A72;
-  --color-neutral-700:  #7E8799;
-  --color-neutral-800:  #A0A0B8;
-  --color-neutral-900:  #C4C9D0;
-  --color-neutral-950:  #E2E5E9;
-  --color-neutral-1000: #F0F0F5;
+  --color-surface-primary:   #FFFFFF;
+  --color-surface-secondary: #F8FAFC;
+  --color-surface-tertiary:  #F1F5F9;
 
-  --color-border-default: #2A2A45;
-  --color-border-hover:   #3A3A55;
+  --color-bg-canvas: #F8FAFC;
+  --color-bg-default: #FFFFFF;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-surface-hover: #F1F5F9;
+  --color-bg-elevated: #FFFFFF;
 
-  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-  --shadow-sm: 0 4px 6px -2px rgb(0 0 0 / 0.35);
-  --shadow-md: 0 8px 16px -4px rgb(0 0 0 / 0.4);
-  --shadow-lg: 0 16px 24px -8px rgb(0 0 0 / 0.5);
+  --color-text-primary:   #0F172A;
+  --color-text-secondary: #475569;
+  --color-text-tertiary:  #94A3B8;
+  --color-text-disabled:  #CBD5E1;
+  --color-text-inverse:   #FFFFFF;
+
+  --color-border-subtle: #F1F5F9;
+  --color-border-default: #E2E8F0;
+  --color-border-hover:   #CBD5E1;
+  --color-border-strong:  #94A3B8;
+
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-sm: 0 4px 6px -2px rgb(0 0 0 / 0.06);
+  --shadow-md: 0 8px 16px -4px rgb(0 0 0 / 0.08);
+  --shadow-lg: 0 16px 24px -8px rgb(0 0 0 / 0.12);
 }
 
-/* Garantir que imagens/icones nao invertam no dark */
-[data-theme="dark"] img,
-[data-theme="dark"] .spinner {
-  opacity: 0.9;
+/* Badges e toasts — light mode */
+[data-theme="light"] .badge--success { background: #DCFCE7; color: #166534; }
+[data-theme="light"] .badge--warning { background: #FEF3C7; color: #92400E; }
+[data-theme="light"] .badge--error   { background: #FEE2E2; color: #991B1B; }
+[data-theme="light"] .badge--info    { background: #DBEAFE; color: #1E40AF; }
+
+[data-theme="light"] .toast--success { background: #DCFCE7; color: #166534; border-color: #BBF7D0; }
+[data-theme="light"] .toast--error   { background: #FEE2E2; color: #991B1B; border-color: #FECACA; }
+[data-theme="light"] .toast--warning { background: #FEF3C7; color: #92400E; border-color: #FDE68A; }
+[data-theme="light"] .toast--info    { background: #DBEAFE; color: #1E40AF; border-color: #BFDBFE; }
+
+[data-theme="light"] .card-score {
+  background: var(--color-surface-tertiary);
 }
 
-/* Override badges e toasts para dark mode */
-[data-theme="dark"] .badge--success {
-  background: #166534; color: #DCFCE7;
-}
-[data-theme="dark"] .badge--warning {
-  background: #92400E; color: #FEF3C7;
-}
-[data-theme="dark"] .badge--error {
-  background: #991B1B; color: #FEE2E2;
-}
-[data-theme="dark"] .badge--info {
-  background: #1E40AF; color: #DBEAFE;
-}
-[data-theme="dark"] .toast--success {
-  background: #0D2A1A; color: #86EFAC; border-color: #166534;
-}
-[data-theme="dark"] .toast--error {
-  background: #2A0D0D; color: #FCA5A5; border-color: #991B1B;
-}
-[data-theme="dark"] .toast--warning {
-  background: #2A1F0D; color: #FDE68A; border-color: #92400E;
-}
-[data-theme="dark"] .toast--info {
-  background: #0D1A2A; color: #93C5FD; border-color: #1E40AF;
+[data-theme="light"] .card-score-label,
+[data-theme="light"] .card-score-value {
+  color: var(--color-text-primary);
 }
 
 /* --------------------------------------------------
-   MULTI-BRAND: Cliente A (azul)
+   MULTI-BRAND
    -------------------------------------------------- */
 
 [data-brand="client-a"] {
   --color-brand-primary: #2563EB;
   --color-brand-hover:   #1D4ED8;
   --color-brand-pressed: #1E40AF;
-  --color-brand-light:   #EFF6FF;
+  --color-brand-light:   rgba(37,99,235,.12);
 }
-
-/* --------------------------------------------------
-   MULTI-BRAND: Cliente B (verde)
-   -------------------------------------------------- */
 
 [data-brand="client-b"] {
   --color-brand-primary: #059669;
   --color-brand-hover:   #047857;
   --color-brand-pressed: #065F46;
-  --color-brand-light:   #ECFDF5;
+  --color-brand-light:   rgba(5,150,105,.12);
 }
-
-/* --------------------------------------------------
-   MULTI-BRAND: Cliente C (roxo)
-   -------------------------------------------------- */
 
 [data-brand="client-c"] {
   --color-brand-primary: #7C3AED;
   --color-brand-hover:   #6D28D9;
   --color-brand-pressed: #5B21B6;
-  --color-brand-light:   #F5F3FF;
+  --color-brand-light:   rgba(124,58,237,.12);
 }
 
 /* --------------------------------------------------
@@ -123,27 +116,23 @@
   --color-border-hover:   #222222;
 }
 
-[data-contrast="high"][data-theme="dark"] {
-  --color-text-primary:   #FFFFFF;
-  --color-text-secondary: #E0E0E0;
-  --color-text-disabled:  #999999;
-  --color-border-default: #AAAAAA;
-  --color-border-hover:   #FFFFFF;
+[data-contrast="high"][data-theme="light"] {
+  --color-text-primary:   #000000;
+  --color-text-secondary: #1A1A1A;
+  --color-text-disabled:  #555555;
+  --color-border-default: #555555;
+  --color-border-hover:   #222222;
 }
 
 /* --------------------------------------------------
    EVENT / SEASONAL THEMING (Natal, Halloween, etc.)
-   --------------------------------------------------
-   Use: <html data-event="natal">
-   Sobrescreve apenas as cores brand — o resto do DS
-   continua funcionando normalmente.
    -------------------------------------------------- */
 
 [data-event="natal"] {
   --color-brand-primary: #D42426;
   --color-brand-hover:   #B81E20;
   --color-brand-pressed: #9A181A;
-  --color-brand-light:   #FFF0F0;
+  --color-brand-light:   rgba(212,36,38,.1);
   --color-success:       #D42426;
 }
 [data-event="natal"] .btn--primary {
@@ -155,10 +144,7 @@
   border-color: #2D8B2E;
 }
 [data-event="natal"] .btn--ghost:hover {
-  background: #F0FFF0;
-}
-[data-event="natal"] .badge--success {
-  background: #D42426; color: #FFF;
+  background: rgba(45,139,46,.1);
 }
 
 /* --------------------------------------------------

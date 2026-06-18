@@ -1,10 +1,11 @@
-const API = 'http://127.0.0.1:3001';
+const API = window.location.origin;
 const COLUMNS = ['triagem', 'aplicadas', 'favoritas', 'entrevista', 'finalizada'];
-const COL_LABELS = { triagem: 'Triagem', favoritas: 'Favoritas', aplicadas: 'Aplicadas', entrevista: 'Entrevista', finalizada: 'Finalizada' };
+const COL_LABELS = { triagem: 'Triagem', favoritas: 'Favoritas', aplicadas: 'Aplicadas', entrevista: 'Entrevistas', finalizada: 'Finalizadas' };
 
 let jobs = [];
 let searchQuery = '';
 let _cvGenerating = false;
+let _pendingCVJobId = null;
 
 async function loadJobs() {
   const r = await fetch(`${API}/api/jobs`);
@@ -31,11 +32,11 @@ function renderKanban() {
     section.innerHTML = `
       <div class="kanban-col-header">
         <span class="col-dot"></span>
-        <h3>${COL_LABELS[col]}</h3>
+        <h2>${COL_LABELS[col]}</h2>
         <span class="col-count">${colJobs.length}</span>
       </div>
       <div class="kanban-col-body">
-        ${colJobs.length === 0 ? '<div class="empty-state">Nenhuma vaga</div>' : colJobs.map(j => cardHTML(j)).join('')}
+        ${colJobs.length === 0 ? '<div class="empty-state">Arraste uma vaga para esta etapa</div>' : colJobs.map(j => cardHTML(j)).join('')}
       </div>
     `;
     section.addEventListener('dragover', e => e.preventDefault());
@@ -51,6 +52,7 @@ function renderKanban() {
   const total = jobs.length;
   const aplicadas = jobs.filter(j => (j.status || 'triagem') === 'aplicadas').length;
   const entrevistas = jobs.filter(j => (j.status || 'triagem') === 'entrevista').length;
+  const finalizadas = jobs.filter(j => (j.status || 'triagem') === 'finalizada').length;
   const scores = jobs.map(j => j.matching_score || j.score).filter(s => s != null && s > 0);
   const matchMedio = scores.length > 0
     ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) + '%'
@@ -58,11 +60,22 @@ function renderKanban() {
   const elTotal = document.getElementById('statTotal');
   const elAplicadas = document.getElementById('statAplicadas');
   const elEntrevistas = document.getElementById('statEntrevistas');
+  const elFinalizadas = document.getElementById('statFinalizadas');
   const elMatch = document.getElementById('statMatchMedio');
   if (elTotal) elTotal.textContent = total;
   if (elAplicadas) elAplicadas.textContent = aplicadas;
   if (elEntrevistas) elEntrevistas.textContent = entrevistas;
+  if (elFinalizadas) elFinalizadas.textContent = finalizadas;
   if (elMatch) elMatch.textContent = matchMedio;
+}
+
+function formatDateBR(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d)) return dateStr;
+  return String(d.getDate()).padStart(2,'0') + '/' +
+         String(d.getMonth()+1).padStart(2,'0') + '/' +
+         String(d.getFullYear()).slice(-2);
 }
 
 function daysSince(dateStr) {
@@ -74,7 +87,6 @@ function daysSince(dateStr) {
 
 function cardHTML(j) {
   const score = j.matching_score || j.score || null;
-  let scoreClass = score === null ? '' : score >= 80 ? 'high' : score >= 50 ? 'mid' : 'low';
   const seniority = j.seniority === 'not_specified' ? '' : j.seniority || '';
   const company = j.company && j.company !== 'null' ? j.company : '';
   const title = j.job_title || 'Sem título';
@@ -84,17 +96,26 @@ function cardHTML(j) {
   let timeTag = '';
   if (days > 30) timeTag = '<span class="card-time-tag overdue">30+ dias</span>';
   else if (days > 15) timeTag = '<span class="card-time-tag warning">15+ dias</span>';
+  const dateBR = formatDateBR(appliedDate);
   return `
     <div class="card" draggable="true" data-id="${j.id}" onclick="openDetail(${j.id})">
       <button class="card-delete" onclick="event.stopPropagation();confirmDelete(${j.id})" title="Excluir">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
       </button>
-      <div class="card-title">${title}</div>
-      ${company ? `<div class="card-company">${company}</div>` : ''}
-      ${score !== null ? `<div class="card-score-row"><span class="card-score-tag ${scoreClass}">${score}%</span>${timeTag}</div>` : ''}
-      <div class="card-meta">
-        ${platform ? `<span class="card-platform">${platform}</span>` : ''}
-        ${appliedDate ? `<span class="card-date">${appliedDate}</span>` : ''}
+      <div class="card-inner">
+        <div class="card-body">
+          <div class="card-title">${company || title}</div>
+          ${company ? `<div class="card-company">${title}</div>` : ''}
+          <div class="card-meta">
+            ${dateBR ? `<span class="card-date">${dateBR}</span>` : ''}
+            ${timeTag}
+          </div>
+        </div>
+        ${score !== null ? `
+        <div class="card-score">
+          <span class="card-score-label">MATCH</span>
+          <span class="card-score-value">${score}%</span>
+        </div>` : ''}
       </div>
     </div>
   `;
@@ -175,6 +196,7 @@ document.getElementById('btnFormatarCV').addEventListener('click', async () => {
 document.getElementById('btnNovaVaga').addEventListener('click', () => {
   document.getElementById('modalNovaVaga').classList.remove('hidden');
   document.getElementById('empresaContext').value = '';
+  document.getElementById('empresaNome').value = '';
   document.getElementById('requisitosVaga').value = '';
   document.getElementById('extractStatus').textContent = '';
   document.getElementById('btnProcessar').disabled = true;
@@ -191,23 +213,38 @@ document.getElementById('requisitosVaga').addEventListener('input', e => {
 
 document.getElementById('btnProcessar').addEventListener('click', async () => {
   const empresa = document.getElementById('empresaContext').value.trim();
+  const empresaNome = document.getElementById('empresaNome').value.trim();
   const requisitos = document.getElementById('requisitosVaga').value.trim();
   const statusEl = document.getElementById('extractStatus');
   const btn = document.getElementById('btnProcessar');
+  const today = new Date();
+  const appliedDate = today.getFullYear() + '-' +
+    String(today.getMonth()+1).padStart(2,'0') + '-' +
+    String(today.getDate()).padStart(2,'0');
   btn.disabled = true; statusEl.className = 'modal-status loading';
   statusEl.innerHTML = '<span class="spinner"></span> Processando com Ollama...';
   try {
     const r = await fetch(`${API}/api/extract`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ empresa_context: empresa, requisitos })
+      body: JSON.stringify({ empresa_context: empresa, empresa_nome: empresaNome, requisitos, applied_date: appliedDate })
     });
     const result = await r.json();
     if (result.success) {
       statusEl.className = 'modal-status success';
-      statusEl.textContent = `✅ ${result.data.job_title || 'Vaga'} — ${result.data.company || 'sem empresa'} salva! Gerando CV...`;
+      statusEl.textContent = `✅ ${result.data.job_title || 'Vaga'} — ${empresaNome || result.data.company || 'sem empresa'} salva! Gerando CV...`;
       document.getElementById('modalNovaVaga').classList.add('hidden');
       loadJobs();
-      setTimeout(() => generateCV(result.id), 500);
+      _pendingCVJobId = result.id;
+      showToast('Gerando CV automaticamente...');
+      setTimeout(async () => {
+        try {
+          await generateCV(result.id, true);
+          loadJobs();
+          showToast('CV gerado com sucesso!');
+        } catch {
+          loadJobs();
+        }
+      }, 500);
     } else {
       statusEl.className = 'modal-status error';
       statusEl.textContent = `❌ ${result.error}`;
@@ -252,29 +289,29 @@ document.getElementById('jobFileInput').addEventListener('change', async (e) => 
   }
 });
 
-async function generateCV(id) {
+async function generateCV(id, silent) {
   _cvGenerating = true;
+  if (_pendingCVJobId === id) _pendingCVJobId = null;
   const btn = document.getElementById('btnGenerateCV');
   const resultDiv = document.getElementById('cvResult');
-  btn.disabled = true;
-  btn.textContent = 'Gerando...';
+  if (!silent && btn) { btn.disabled = true; btn.textContent = 'Gerando...'; }
   try {
     const r = await fetch(`${API}/api/jobs/${id}/generate-cv`, { method: 'POST' });
     const data = await r.json();
-    if (data.success) {
-      const cv = data.cv;
-      const adjScore = data.adjusted_score;
+    if (!data.success) throw new Error(data.error || 'Erro ao gerar CV');
+    const cv = data.cv;
+    const adjScore = data.adjusted_score;
 
-      // Atualizar card de match do CV ajustado
-      if (adjScore != null) {
-        const adjColor = adjScore >= 80 ? 'var(--color-success)' : adjScore >= 50 ? 'var(--color-warning)' : 'var(--color-error)';
-        const cardAdj = document.getElementById('cardAdjustedScore');
-        const fillAdj = document.getElementById('adjScoreFill');
-        const valAdj  = document.getElementById('adjScoreValue');
-        if (cardAdj) { cardAdj.classList.remove('info-card-disabled'); }
-        if (fillAdj) { fillAdj.style.width = adjScore + '%'; fillAdj.style.background = adjColor; }
-        if (valAdj)  { valAdj.textContent = adjScore + '%'; valAdj.style.color = adjColor; }
-      }
+    if (adjScore != null) {
+      const adjColor = adjScore >= 80 ? 'var(--color-success)' : adjScore >= 50 ? 'var(--color-warning)' : 'var(--color-error)';
+      const cardAdj = document.getElementById('cardAdjustedScore');
+      const fillAdj = document.getElementById('adjScoreFill');
+      const valAdj  = document.getElementById('adjScoreValue');
+      if (cardAdj) { cardAdj.classList.remove('info-card-disabled'); }
+      if (fillAdj) { fillAdj.style.width = adjScore + '%'; fillAdj.style.background = adjColor; }
+      if (valAdj)  { valAdj.textContent = adjScore + '%'; valAdj.style.color = adjColor; }
+    }
+    if (btn && resultDiv) {
       resultDiv.style.display = 'block';
       resultDiv.innerHTML = `
         <div style="background:var(--color-surface-tertiary);border-radius:10px;padding:16px">
@@ -292,21 +329,23 @@ async function generateCV(id) {
       `;
       btn.textContent = '✓ Gerado';
       setTimeout(() => { btn.textContent = 'Gerar Novo CV'; btn.disabled = false; }, 2000);
-      try {
-        const r2 = await fetch(`${API}/api/jobs/${id}/save-cv-file`, { method: 'POST' });
-        const result2 = await r2.json();
-        if (result2.success) {
+    }
+    try {
+      const r2 = await fetch(`${API}/api/jobs/${id}/save-cv-file`, { method: 'POST' });
+      const result2 = await r2.json();
+      if (result2.success) {
+        if (resultDiv) {
           const saved = document.createElement('div');
           saved.style.cssText = 'font-size:12px;color:var(--color-success);margin-top:8px;text-align:center';
           saved.textContent = `📁 ${result2.filename}`;
           resultDiv.appendChild(saved);
         }
-      } catch {}
-    }
+      }
+    } catch {}
   } catch (e) {
-    showError('Erro ao gerar CV', e.message, 'generateCV');
-    btn.textContent = 'Gerar CV';
-    btn.disabled = false;
+    if (!silent) showError('Erro ao gerar CV', e.message, 'generateCV');
+    if (btn) { btn.textContent = 'Gerar CV'; btn.disabled = false; }
+    if (silent) throw e;
   } finally {
     _cvGenerating = false;
   }
@@ -374,6 +413,7 @@ async function openReviewCV(id) {
       </div>
     `;
   } catch (e) {
+    console.error('openReviewCV error:', e);
     showToast('Erro ao carregar CV para revisão.');
   }
 }
@@ -468,14 +508,14 @@ async function saveJobDetail(id) {
 function closeDetail() {
   document.getElementById('sideOverlay').classList.add('hidden');
   document.getElementById('modalDetalhes').classList.add('hidden');
+  if (window._detailPoll) { clearInterval(window._detailPoll); window._detailPoll = null; }
 }
 
-function toggleJobText() {
-  const toggle = document.getElementById('jobTextToggle');
-  const content = document.getElementById('jobTextContent');
-  const isOpen = content.classList.toggle('open');
-  toggle.classList.toggle('open');
+function toggleCollapsibleCard(el) {
+  const card = el.closest('.info-card-collapsible');
+  if (card) card.classList.toggle('expanded');
 }
+
 
 // Detalhes - Side Panel
 async function openDetail(id) {
@@ -492,6 +532,8 @@ async function openDetail(id) {
 
   const scoreColor = score === null ? '' : score >= 80 ? 'var(--color-success)' : score >= 50 ? 'var(--color-warning)' : 'var(--color-error)';
 
+  const cvPending = _pendingCVJobId === id || (_cvGenerating && job.adjusted_score == null);
+
   const actionsEl = document.getElementById('sidePanelActions');
   const ringEl = document.getElementById('sidePanelRing');
 
@@ -501,13 +543,13 @@ async function openDetail(id) {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Exportar PDF
       </button>
-      <button class="btn btn--ghost" id="btnReviewCV" onclick="openReviewCV(${job.id})">
+      <button class="btn btn--secondary" id="btnReviewCV" onclick="openReviewCV(${job.id})">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         Revisar CV
       </button>
-      <button class="btn btn--ghost" id="btnGenerateCV" onclick="generateCV(${job.id})">
+      <button class="btn btn--secondary" id="btnGenerateCV" onclick="generateCV(${job.id})" ${cvPending ? 'disabled' : ''}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-        Gerar Novo CV
+        ${cvPending ? 'Gerando...' : 'Gerar Novo CV'}
       </button>
     `;
   }
@@ -519,7 +561,12 @@ async function openDetail(id) {
   body.innerHTML = `
     <div id="cvResult" style="display:none;margin-bottom:16px"></div>
 
-    ${genAt ? `
+    ${cvPending ? `
+    <div class="detail-gen-info" id="cvGenInfo">
+      <div class="spinner spinner--sm"></div>
+      <span>Gerando CV automaticamente...</span>
+    </div>
+    ` : genAt ? `
     <div class="detail-gen-info">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       <span>CV gerado em <strong>${genAt}</strong></span>
@@ -541,13 +588,16 @@ async function openDetail(id) {
 
       ${score !== null ? `
       <div class="info-card info-card-match">
+        <div class="info-card-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+        </div>
         <div class="match-bg-fill" style="width:${score}%; background:${scoreColor};"></div>
-        <div class="info-card-content" style="width:100%;">
+        <div class="info-card-content">
           <span class="info-card-label">Match entre vaga e CV base</span>
-          <span class="match-bar-value" style="color:${scoreColor}">${score}%</span>
+          <span class="info-card-value match-value" style="color:${scoreColor}">${score}%</span>
         </div>
       </div>
-      ` : '<div class="info-card"><div class="info-card-content"><span class="info-card-label">Match entre vaga e CV base</span><span class="info-card-value">—</span></div></div>'}
+      ` : '<div class="info-card"><div class="info-card-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg></div><div class="info-card-content"><span class="info-card-label">Match entre vaga e CV base</span><span class="info-card-value">—</span></div></div>'}
 
       <div class="info-card">
         <div class="info-card-icon">
@@ -566,10 +616,13 @@ async function openDetail(id) {
       </div>
 
       <div class="info-card info-card-match ${job.adjusted_score == null ? 'info-card-disabled' : ''}" id="cardAdjustedScore">
+        <div class="info-card-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+        </div>
         <div class="match-bg-fill" id="adjScoreFill" style="width:${job.adjusted_score || 0}%; background:${job.adjusted_score >= 80 ? 'var(--color-success)' : job.adjusted_score >= 50 ? 'var(--color-warning)' : 'var(--color-error)'};"></div>
-        <div class="info-card-content" style="width:100%;">
+        <div class="info-card-content">
           <span class="info-card-label">Match entre vaga e CV ajustado</span>
-          <span class="match-bar-value" id="adjScoreValue" style="color:${job.adjusted_score >= 80 ? 'var(--color-success)' : job.adjusted_score >= 50 ? 'var(--color-warning)' : 'var(--color-error)'}">${job.adjusted_score != null ? job.adjusted_score + '%' : '—'}</span>
+          <span class="info-card-value match-value" id="adjScoreValue" style="color:${job.adjusted_score >= 80 ? 'var(--color-success)' : job.adjusted_score >= 50 ? 'var(--color-warning)' : 'var(--color-error)'}">${job.adjusted_score != null ? job.adjusted_score + '%' : '—'}</span>
         </div>
       </div>
 
@@ -639,37 +692,116 @@ async function openDetail(id) {
         </div>
       </div>
 
-    </div>
 
-    <div class="detail-grid-2col" style="margin-top:20px">
-      <div class="detail-section">
-        <h4>Skills Requeridas <span class="section-count">${skills.length}</span></h4>
-        <div class="detail-tags">
-          ${skills.map(s => `<span class="detail-tag">${s}</span>`).join('') || '<span style="color:var(--color-text-secondary);font-size:13px">—</span>'}
+
+      <div class="info-card info-card-collapsible info-card-full" onclick="toggleCollapsibleCard(this)">
+        <div class="info-card-body">
+          <div class="info-card-header">
+            <div class="info-card-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <span class="info-card-label">Skills Requeridas <span class="section-count">${skills.length}</span></span>
+            <svg class="collapse-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="info-card-collapse-body">
+            <div class="info-card-tags">
+              ${skills.map(s => `<span class="detail-tag">${s}</span>`).join('')}
+            </div>
+          </div>
         </div>
       </div>
-      <div class="detail-section">
-        <h4>Diferenciais <span class="section-count">${nice.length}</span></h4>
-        <div class="detail-tags">
-          ${nice.map(s => `<span class="detail-tag">${s}</span>`).join('') || '<span style="color:var(--color-text-secondary);font-size:13px">—</span>'}
+
+      <div class="info-card info-card-collapsible info-card-full" onclick="toggleCollapsibleCard(this)">
+        <div class="info-card-body">
+          <div class="info-card-header">
+            <div class="info-card-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <span class="info-card-label">Diferenciais <span class="section-count">${nice.length}</span></span>
+            <svg class="collapse-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="info-card-collapse-body">
+            <div class="info-card-tags">
+              ${nice.map(s => `<span class="detail-tag">${s}</span>`).join('')}
+            </div>
+          </div>
         </div>
       </div>
-      <div class="detail-section">
-        <h4>Ferramentas Exigidas</h4>
-        <div class="detail-tags">
-          ${tools.map(s => `<span class="detail-tag">${s}</span>`).join('') || '<span style="color:var(--color-text-secondary);font-size:13px">—</span>'}
+
+      <div class="info-card info-card-collapsible info-card-full" onclick="toggleCollapsibleCard(this)">
+        <div class="info-card-body">
+          <div class="info-card-header">
+            <div class="info-card-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            </div>
+            <span class="info-card-label">Ferramentas Exigidas <span class="section-count">${tools.length}</span></span>
+            <svg class="collapse-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="info-card-collapse-body">
+            <div class="info-card-tags">
+              ${tools.map(s => `<span class="detail-tag">${s}</span>`).join('')}
+            </div>
+          </div>
         </div>
       </div>
-      <div class="detail-section">
-        <h4>ATS Keywords</h4>
-        <div class="detail-tags">
-          ${ats.map(s => `<span class="detail-tag">${s}</span>`).join('') || '<span style="color:var(--color-text-secondary);font-size:13px">—</span>'}
+
+      <div class="info-card info-card-collapsible info-card-full" onclick="toggleCollapsibleCard(this)">
+        <div class="info-card-body">
+          <div class="info-card-header">
+            <div class="info-card-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+            </div>
+            <span class="info-card-label">ATS Keywords <span class="section-count">${ats.length}</span></span>
+            <svg class="collapse-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="info-card-collapse-body">
+            <div class="info-card-tags">
+              ${ats.map(s => `<span class="detail-tag">${s}</span>`).join('')}
+            </div>
+          </div>
         </div>
       </div>
-      <div class="detail-section detail-full">
-        <h4>Responsabilidades</h4>
-        <p>${resp.map(r => '• ' + r).join('<br>') || '—'}</p>
+
+      <div class="info-card info-card-collapsible info-card-full" onclick="toggleCollapsibleCard(this)">
+        <div class="info-card-body">
+          <div class="info-card-header">
+            <div class="info-card-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <span class="info-card-label">Responsabilidades <span class="section-count">${resp.length}</span></span>
+            <svg class="collapse-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="info-card-collapse-body">
+            <div class="info-card-tags" style="flex-direction:column;gap:6px">
+              ${resp.map(r => `<span class="detail-tag" style="display:block">• ${r}</span>`).join('')}
+            </div>
+          </div>
+        </div>
       </div>
+
+      ${job.job_text || job.requisitos ? `
+      <div class="info-card info-card-collapsible info-card-full" onclick="toggleCollapsibleCard(this)">
+        <div class="info-card-body">
+          <div class="info-card-header">
+            <div class="info-card-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/></svg>
+            </div>
+            <span class="info-card-label">Texto da Vaga</span>
+            <svg class="collapse-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="info-card-collapse-body" style="flex-direction:column;gap:6px;white-space:pre-wrap;font-size:13px;line-height:1.6;padding:0;height:auto">
+            ${job.empresa_context ? `
+            <div style="margin-bottom:12px"><strong style="font-size:12px;color:var(--color-text-primary)">Sobre a Empresa</strong>
+${escapeHtml(job.empresa_context)}</div>
+<hr style="margin:12px 0;border:none;border-top:1px solid var(--color-border-default)">
+<div><strong style="font-size:12px;color:var(--color-text-primary)">Requisitos da Vaga</strong>
+${escapeHtml(job.requisitos || job.job_text)}</div>
+            ` : escapeHtml(job.job_text || job.requisitos)}
+          </div>
+        </div>
+      </div>
+      ` : ''}
+
     </div>
 
     <div style="margin-top:20px">
@@ -686,22 +818,6 @@ async function openDetail(id) {
       </div>
     </div>
 
-    ${job.job_text || job.requisitos ? `
-    <div style="margin-top:20px">
-      <h4 style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--color-text-secondary);margin-bottom:8px">Texto da Vaga</h4>
-      <button class="job-text-toggle" id="jobTextToggle" onclick="toggleJobText()">
-        <span class="arrow">&#9654;</span> Clique para ler o texto completo
-      </button>
-      <div class="job-text-content" id="jobTextContent">
-        ${job.empresa_context ? `<div style="margin-bottom:12px"><strong style="font-size:12px;color:var(--color-text-primary)">Sobre a Empresa</strong>
-${escapeHtml(job.empresa_context)}</div>
-<hr style="margin:12px 0;border:none;border-top:1px solid var(--color-border-default)">
-<div><strong style="font-size:12px;color:var(--color-text-primary)">Requisitos da Vaga</strong>
-${escapeHtml(job.requisitos || job.job_text)}</div>` : escapeHtml(job.job_text || job.requisitos)}
-      </div>
-    </div>
-    ` : ''}
-
     <div class="detail-full detail-btn-row" style="margin-top:20px">
       <button class="btn btn--ghost" onclick="closeDetail()">Cancelar</button>
       <button class="btn-save" id="btnSaveDetail" onclick="saveJobDetail(${job.id})">Salvar</button>
@@ -710,6 +826,31 @@ ${escapeHtml(job.requisitos || job.job_text)}</div>` : escapeHtml(job.job_text |
   document.getElementById('sideOverlay').classList.remove('hidden');
   document.getElementById('modalDetalhes').classList.remove('hidden');
   loadAttachments(job.id);
+
+  if (cvPending) {
+    window._detailPoll = setInterval(async () => {
+      const r2 = await fetch(`${API}/api/jobs/${id}`);
+      const j2 = await r2.json();
+      if (j2.adjusted_score != null) {
+        clearInterval(window._detailPoll); window._detailPoll = null;
+        const fill = document.getElementById('adjScoreFill');
+        const val = document.getElementById('adjScoreValue');
+        const card = document.getElementById('cardAdjustedScore');
+        const genInfo = document.getElementById('cvGenInfo');
+        if (fill) { fill.style.width = j2.adjusted_score + '%'; fill.style.background = j2.adjusted_score >= 80 ? 'var(--color-success)' : j2.adjusted_score >= 50 ? 'var(--color-warning)' : 'var(--color-error)'; }
+        if (val) { val.textContent = j2.adjusted_score + '%'; val.style.color = j2.adjusted_score >= 80 ? 'var(--color-success)' : j2.adjusted_score >= 50 ? 'var(--color-warning)' : 'var(--color-error)'; }
+        if (card) card.classList.remove('info-card-disabled');
+        if (genInfo) {
+          genInfo.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>CV gerado em <strong>${new Date(j2.generated_at).toLocaleString('pt-BR')}</strong></span>`;
+          const hr = document.createElement('hr');
+          hr.className = 'side-panel-rule';
+          genInfo.after(hr);
+        }
+        const genBtn = document.getElementById('btnGenerateCV');
+        if (genBtn) { genBtn.disabled = false; genBtn.textContent = 'Gerar Novo CV'; }
+      }
+    }, 2000);
+  }
 }
 
 function escapeHtml(text) {
@@ -918,7 +1059,7 @@ function savePlatformOther(input) {
 function locationSearchHTML() {
   return `
     <input type="text" class="detail-input info-card-input" id="editLocation"
-      placeholder="Buscar cidade..." autocomplete="off"
+      placeholder="Cidade, Estado ou Remoto..." autocomplete="off"
       oninput="searchCities(this.value)">
     <ul class="city-suggestions" id="citySuggestions"></ul>
   `;
@@ -938,19 +1079,25 @@ async function searchCities(query) {
   if (query.length < 2) { list.innerHTML = ''; list.style.display = 'none'; return; }
   citySearchTimeout = setTimeout(async () => {
     try {
+      let html = '';
+      const q = query.toLowerCase();
+      if (q === 'remoto' || q === 'home office' || q === 'homeoffice') {
+        html += '<li class="city-option" onclick="selectCity(\'Remoto\')">🌍 Remoto</li>';
+      }
       const r = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&countrycodes=br&featuretype=city&format=json&limit=6`,
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&countrycodes=br&featureType=city&format=json&limit=5`,
         { headers: { 'Accept-Language': 'pt-BR' } }
       );
       const data = await r.json();
-      if (!data.length) { list.innerHTML = '<li class="city-no-result">Nenhuma cidade encontrada</li>'; list.style.display = 'block'; return; }
-      list.innerHTML = data.map(d => {
+      html += data.map(d => {
         const parts = d.display_name.split(',');
         const city = parts[0].trim();
         const state = parts.find(p => p.trim().length === 2)?.trim() || parts[1]?.trim() || '';
         const label = state ? `${city}, ${state}` : city;
-        return `<li class="city-option" onclick="selectCity('${label.replace(/'/g, "\\'")}')">${label}</li>`;
+        return `<li class="city-option" onclick="selectCity('${label.replace(/'/g, "\\'")}')">🏙️ ${label}</li>`;
       }).join('');
+      if (!html) { list.innerHTML = '<li class="city-no-result">Nenhuma cidade encontrada</li>'; list.style.display = 'block'; return; }
+      list.innerHTML = html;
       list.style.display = 'block';
     } catch { list.innerHTML = ''; list.style.display = 'none'; }
   }, 500);

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Design System Azul</title>
+  <link rel="stylesheet" href="azul.css">
+</head>
+<body>
+  <nav class="ds-nav">
+    <div class="ds-nav__inner">
+      <a href="index.html" class="ds-nav__brand">Azul<span>.</span></a>
+      <ul class="ds-nav__links">
+        <li><a href="foundations.html">Foundations</a></li>
+        <li><a href="semantic.html">Semantic</a></li>
+        <li><a href="components.html">Components</a></li>
+        <li><a href="usage.html">Usage</a></li>
+        <li><a href="demo/index.html">Exemplos</a></li>
+      </ul>
+      <div class="ds-nav__actions">
+        <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema claro/escuro">
+          <span class="theme-toggle__icon" id="themeIcon">&#x263D;</span>
+          <span id="themeLabel">Escuro</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+  <div class="ds-page">
+    <header class="ds-header">
+      <h1 class="text-3xl">Design System Azul</h1>
+      <p class="text-lg text-secondary">Sistema de design com paleta teal escura. Explore tokens, componentes e paginas de exemplo.</p>
+    </header>
+    <div class="home-grid">
+      <a href="foundations.html" class="home-card">
+        <span class="icon">&#x1F3A8;</span>
+        <h3>Foundations</h3>
+        <p>Cores, tipografia, espacamento, cantos e sombras — os valores atomicos do sistema.</p>
+      </a>
+      <a href="semantic.html" class="home-card">
+        <span class="icon">&#x1F524;</span>
+        <h3>Semantic</h3>
+        <p>Cores com proposito, papeis de texto, superficies, bordas e estados interativos.</p>
+      </a>
+      <a href="components.html" class="home-card">
+        <span class="icon">&#x1F9E9;</span>
+        <h3>Components</h3>
+        <p>Botoes, badges, inputs, avatares, cards e tabelas — componentes prontos para usar.</p>
+      </a>
+      <a href="usage.html" class="home-card">
+        <span class="icon">&#x1F4D6;</span>
+        <h3>Usage</h3>
+        <p>Como instalar e usar o Design System Azul no seu projeto HTML/CSS.</p>
+      </a>
+      <a href="demo/index.html" class="home-card">
+        <span class="icon">&#x1F680;</span>
+        <h3>Exemplos</h3>
+        <p>Pagina de exemplo construida com os tokens e componentes do Azul.</p>
+      </a>
+    </div>
+  </div>
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const isDark = html.getAttribute('data-theme') === 'dark';
+      const newTheme = isDark ? 'light' : 'dark';
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('ds-theme', newTheme);
+      document.getElementById('themeIcon').textContent = isDark ? '\u263D' : '\u2600';
+      document.getElementById('themeLabel').textContent = isDark ? 'Escuro' : 'Claro';
+    }
+    (function initTheme() {
+      const saved = localStorage.getItem('ds-theme') || 'dark';
+      if (saved === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+        document.getElementById('themeIcon').textContent = '\u2600';
+        document.getElementById('themeLabel').textContent = 'Claro';
+      }
+    })();
+  </script>
+</body>
+</html>

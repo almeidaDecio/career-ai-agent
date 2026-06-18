@@ -1,0 +1,536 @@
+╔══════════════════════════════════════════════════════════════════╗
+║                   MANUAL DE INSTALACAO - AJUSTACV              ║
+║                     Gerenciador de Candidaturas                ║
+║                  (Guia para iniciantes em computador)          ║
+╚══════════════════════════════════════════════════════════════════╝
+
+
+=============================================================================
+O QUE E O AJUSTACV?
+=============================================================================
+
+O AjustaCV e um programa que roda no SEU computador (nada de internet,
+nada de nuvem) para:
+
+  • Organizar suas candidaturas a vagas de emprego
+  • Calcular o "match" entre seu curriculo e cada vaga
+  • Gerar curriculos otimizados para cada vaga especifica
+
+Tudo funciona localmente, usando inteligencia artificial (IA) rodando
+no seu proprio computador. Seus dados nunca saem da sua maquina.
+
+
+=============================================================================
+REPOSITORIO NO GITHUB (ONDE BAIXAR O PROJETO)
+=============================================================================
+
+O codigo fonte do AjustaCV esta no GitHub no endereco abaixo:
+
+  >>>  https://github.com/almeidaDecio/career-ai-agent  <<<
+
+Lah voce encontra:
+  • O codigo completo do projeto
+  • As versoes mais atualizadas
+  • Instrucoes atualizadas
+
+Se voce nao sabe usar Git, nao se preocupe — na pagina do GitHub tem um
+botao verde escrito "<> Code". Clique nele e depois em "Download ZIP".
+Pronto, voce baixa o projeto inteiro como um arquivo compactado.
+
+
+=============================================================================
+ANTES DE COMECAR — O QUE VOCE PRECISA SABER
+=============================================================================
+
+Este manual foi escrito para quem NUNCA usou terminal ou programacao.
+Vou explicar cada detalhe.
+
+VOCE VAI PRECISA DE:
+
+  [ ]  1. Um computador com Windows 10 ou Windows 11
+  [ ]  2. O Node.js (programa gratuito) — ~5 minutos para instalar
+  [ ]  3. O Ollama (programa de IA gratuito) — ~5 minutos para instalar
+  [ ]  4. Baixar o modelo de IA — ~30 minutos (arquivo grande de ~4 GB)
+  [ ]  5. O projeto AjustaCV baixado do GitHub
+  [ ]  6. Uns 30 minutos no total para fazer tudo funcionar
+
+VAMOS LA:
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+PASSO 1 — INSTALAR O NODE.JS
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+O Node.js e um programa que o AjustaCV precisa para funcionar.
+
+  1. Abra o navegador (Chrome, Edge, Firefox — qualquer um)
+  2. Acesse: https://nodejs.org
+  3. A pagina ja vai mostrar um botao verde escrito "LTS" (do lado esquerdo)
+  4. Clique nesse botao — ele vai baixar um arquivo .msi
+  5. Quando terminar de baixar, abra o arquivo baixado
+  6. Sera aberto um instalador. Clique em "Next" (ou "Proximo") em TODAS
+     as telas, sem mudar nada, ate aparecer "Install" (ou "Instalar")
+  7. Clique em "Install" e aguarde terminar
+  8. Quando aparecer "Finish" (ou "Concluir"), clique para fechar
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+PASSO 2 — ABRIR O POWERSHELL (O "TERMINAL")
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+O PowerShell e uma janela preta onde voce digita comandos. Vamos usar
+ele varias vezes.
+
+  COMO ABRIR:
+  1. Pressione a tecla Windows (aquela com o simbolo do Windows)
+  2. Digite "PowerShell" (sem aspas)
+  3. Clique em "Windows PowerShell" (o programa azul preto)
+  4. Vai abrir uma janela com fundo azul escuro ou preto
+
+  Pronto. Essa e a janela onde voce vai digitar os comandos.
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+PASSO 3 — VERIFICAR SE O NODE.JS INSTALOU CORRETAMENTE
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+No PowerShell (a janela preta/azul que voce abriu), digite:
+
+    node -v
+
+E aperte ENTER.
+
+  • Se aparecer algo como "v18.x.x" ou "v20.x.x" ou "v22.x.x" — OK,
+    o Node.js esta instalado.
+
+  • Se aparecer "não é reconhecido" ou erro parecido — feche o
+    PowerShell, abra de novo e tente novamente. Se ainda der erro,
+    reinicie o computador e tente de novo.
+
+Agora digite tambem:
+
+    npm -v
+
+E aperte ENTER. Deve aparecer um numero tipo "10.x.x" ou "11.x.x".
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+PASSO 4 — INSTALAR O OLLAMA (O PROGRAMA DE IA)
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+O Ollama e o programa que roda a inteligencia artificial no seu PC.
+
+  1. Abra o navegador
+  2. Acesse: https://ollama.com/download
+  3. Clique em "Download for Windows"
+  4. Quando baixar, abra o arquivo .exe
+  5. O instalador vai abrir. Clique em "Install" e aguarde
+  6. Quando terminar, o Ollama ja vai iniciar automaticamente
+
+  COMO SABER SE O OLLAMA ESTA RODANDO:
+  • Olhe na bandeja do sistema (cantinho inferior direito da tela,
+    perto do relogio). Lembre-se de clicar na setinha 'mostrar icones
+    ocultos' se necessario.
+  • Voce vai ver um icone de uma cabra (o simbolo do Ollama)
+  • Se nao aparecer, va no Menu Iniciar > digite "Ollama" > clique
+    para abrir
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+PASSO 5 — BAIXAR O MODELO DE IA (ARQUIVO GRANDE ~4 GB)
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+O modelo de IA e o "cerebro" que vai analisar as vagas e gerar curriculos.
+
+  No PowerShell (a janela preta), digite:
+
+    ollama pull job-analyzer
+
+  E aperte ENTER.
+
+  AGORA ESPERE. Esse download leva de 5 a 30 minutos dependendo da sua
+  internet. O arquivo tem cerca de 4 GB (gigabytes).
+
+  Enquanto baixa, voce vai ver uma barra de progresso no PowerShell.
+  Nao feche a janela — deixe baixar ate terminar.
+
+  Quando terminar, voce vai ver o cursor piscando de novo (sem mensagem
+  de erro).
+
+  TESTAR SE FUNCIONA:
+  Digite no PowerShell:
+
+    ollama run job-analyzer "Ola, responda apenas: OK"
+
+  Aperte ENTER. Se funcionar, o programa vai responder com algo como
+  "OK". Se demorar alguns segundos na primeira vez, e normal.
+
+  Depois de testar, voce pode fechar essa janela do PowerShell (mas
+  mantenha o Ollama rodando em segundo plano).
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+PASSO 6 — BAIXAR O PROJETO DO GITHUB
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+Agora voce precisa baixar os arquivos do AjustaCV.
+
+  OPCAP 1 — BAIXAR O ZIP (MAIS FACIL):
+
+    1. Abra o navegador
+    2. Acesse: https://github.com/almeidaDecio/career-ai-agent
+    3. Clique no botao verde "<> Code"
+    4. Clique em "Download ZIP"
+    5. Quando baixar, abra a pasta "Downloads" no seu computador
+    6. Clique com o botao DIREITO no arquivo ZIP baixado
+    7. Escolha "Extrair tudo..." (ou "Extract All...")
+    8. Escolha uma pasta facil de achar, como a propria Area de
+       Trabalho (Desktop) ou C:\AjustaCV
+    9. Clique em "Extrair"
+
+  Ao final, voce vai ter uma pasta chamada "career-ai-agent-main" ou
+  "career-ai-agent".
+
+  OPCAP 2 — VIA GIT (SE VOCE SABE USAR):
+
+    git clone https://github.com/almeidaDecio/career-ai-agent.git
+
+  IMPORTANTE: Anote o caminho da pasta onde voce colocou o projeto.
+  Por exemplo: C:\Users\SeuNome\Desktop\career-ai-agent
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+PASSO 7 — NAVEGAR ATE A PASTA DO PROJETO NO POWERSHELL
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+Agora voce precisa dizer ao PowerShell onde esta o projeto.
+
+  1. Abra o PowerShell novamente (se fechou)
+  2 Digite o comando CD (que significa "Change Directory") seguido
+     do caminho da pasta onde voce colocou o projeto.
+
+     Exemplo:
+        cd C:\Users\SeuNome\Desktop\career-ai-agent
+
+     IMPORTANTE: Troque "SeuNome" pelo nome do seu usuario do Windows.
+     Se nao souber qual e, abra o Explorador de Arquivos e veja o nome
+     da pasta em C:\Users\
+
+  DICA: Voce tambem pode clicar na barra de endereco do Explorador de
+  Arquivos dentro da pasta do projeto, copiar o caminho, e colar no
+  PowerShell com Ctrl+V.
+
+  Depois de digitar o comando, aperte ENTER. O PowerShell vai mudar
+  para mostrar o caminho da pasta.
+
+  Para confirmar que esta no lugar certo, digite:
+
+    dir
+
+  Aperte ENTER. Voce deve ver uma lista de arquivos e pastas,
+  incluindo: backend/, frontend/, package.json, sample_cv.json, etc.
+  Se nao aparecer, voce esta na pasta errada.
+
+  ATENCAO: Neste passo, muita gente erra o caminho. Verifique se a
+  pasta tem os arquivos "package.json" e "sample_cv.json". Se nao
+  tiver, voce esta no lugar errado.
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+PASSO 8 — INSTALAR AS DEPENDENCIAS DO PROJETO
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+Agora o PowerShell ja esta na pasta certa (mostrando o caminho dela).
+Digite:
+
+    npm install
+
+E aperte ENTER. Esse comando vai baixar e instalar as bibliotecas que
+o AjustaCV precisa para funcionar.
+
+  • Isso pode levar de 30 segundos a 2 minutos
+  • Voce vai ver um monte de texto rolando na tela — e normal
+  • Se aparecerem algumas coisas em AMARELO (warnings), pode ignorar
+  • Se aparecer algo em VERMELHO (error), ai e problema. Me avise.
+  • Quando terminar, o cursor volta a piscar sem mensagem de erro
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+PASSO 9 — CONFIGURAR SEU CURRICULO (O ARQUIVO sample_cv.json)
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+Este e o passo MAIS IMPORTANTE. O arquivo "sample_cv.json" contem seu
+curriculo em formato de dados. E com base nele que o AjustaCV calcula
+o match com as vagas.
+
+  COMO EDITAR:
+  1. Va na pasta do projeto (no Explorador de Arquivos)
+  2. Encontre o arquivo "sample_cv.json"
+  3. Clique com o botao DIREITO nele
+  4. Escolha "Abrir com" > "Bloco de Notas" (Notepad)
+
+  O arquivo parece complicado, mas e so voce preencher com SEUS dados.
+  Nao se preocupe com as virgulas e chaves — so nao apague nenhuma.
+
+  O que cada parte significa:
+
+    "name": "Seu Nome Completo"
+    "current_title": "Seu Cargo Atual"
+    "total_experience_years": quantos anos de experiencia
+
+    "summary": — Escreva um resumo profissional de 2-3 paragrafos
+
+    "categories" — Sao grupos de habilidades. Em "skills" dentro de
+    cada grupo, coloque suas habilidades. Em "evidence" escreva uma
+    frase de exemplo do que voce fez.
+
+    "experience" — Suas experiencias profissionais. Para cada emprego:
+      "company": Nome da empresa
+      "role": Seu cargo
+      "period": "mes/ano – mes/ano"
+      "years": quantos anos
+      "domain": area de atuacao
+      "highlights": ["realizacao 1", "realizacao 2"]
+      "skills": ["skill 1", "skill 2"]
+
+    "education" — Sua formacao
+    "languages" — Idiomas
+
+  DEPOIS DE EDITAR: Va em "Arquivo" > "Salvar" (ou Ctrl+S) e feche
+  o Bloco de Notas.
+
+  ATENCAO: Se o arquivo tiver algum erro de formato (uma virgula
+  faltando, uma chave errada), o programa nao vai funcionar. Se
+  acontecer, baixe o sample_cv.json original do GitHub de novo e
+  tente editar com mais cuidado.
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+PASSO 10 — INICIAR O SERVIDOR
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+Com o Ollama rodando em segundo plano (icone na bandeja do sistema),
+e com o PowerShell aberto na pasta do projeto, digite:
+
+    npm start
+
+E aperte ENTER.
+
+  • Voce vai ver algumas mensagens e, se tudo der certo, a frase:
+
+        API rodando em http://127.0.0.1:3001
+
+  • PRONTO! O AjustaCV esta rodando!
+  • Nao feche esta janela do PowerShell — ela precisa ficar aberta
+    enquanto voce estiver usando o programa.
+
+  SE APARECER ERRO DE "PORTA OCUPADA":
+    Digite o comando:
+        npx kill-port 3001
+    E depois tente de novo:
+        npm start
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+PASSO 11 — ABRIR O AJUSTACV NO NAVEGADOR
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+  1. Abra o Chrome, Edge, Firefox ou qualquer navegador
+  2. Na barra de endereco (onde voce digita o site), DIGITE:
+
+        http://127.0.0.1:3001
+
+  3. Aperte ENTER.
+
+  Pronto! A tela do AjustaCV vai aparecer com:
+  • Um quadro com colunas: Triagem, Aplicadas, Favoritas, Entrevista,
+    Finalizada
+  • Uma barra com estatisticas no topo
+  • Botoes "Nova Vaga" e "Importar CV"
+
+  SE A PAGINA ABRIR BRANCA:
+  • Espere alguns segundos e recarregue (F5)
+  • Verifique se o PowerShell ainda esta com o servidor rodando
+  • Abra o console do navegador (F12) e veja se tem erro em vermelho
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+PASSO 12 — TESTAR SE TUDO FUNCIONA
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+  1. No AjustaCV, clique no botao "Nova Vaga" (canto superior direito)
+  2. Vai abrir uma janela. Preencha:
+     • Nome da Empresa: (opcional — pode deixar em branco)
+     • Requisitos da Vaga: COLE o texto completo de uma vaga que voce
+       encontrou (descricao, requisitos, responsabilidades...)
+  3. Clique em "Processar"
+  4. AGUARDE — O Ollama vai analisar o texto. Pode levar de 10 a 60
+     segundos na primeira vez.
+  5. Quando terminar, a vaga aparece na coluna "Triagem" com um numero
+     de percentual de match (ex: 67%)
+  6. Clique na vaga para abrir o painel de detalhes:
+     • Editar informacoes (empresa, senioridade, data, plataforma)
+     • "Exportar PDF" — gera o curriculo otimizado para impressao
+     • "Revisar CV" — permite editar o CV gerado manualmente
+     • "Gerar Novo CV" — gera um curriculo adaptado para a vaga
+     • "Salvar" — salva as alteracoes
+
+
+=============================================================================
+PROBLEMAS COMUNS E SOLUCOES
+=============================================================================
+
+PROBLEMA: "node nao e reconhecido"
+    O Node.js nao foi instalado ou o PowerShell precisa ser reiniciado.
+    Feche e abra o PowerShell de novo. Se continuar, instale o Node.js
+    de novo e reinicie o computador.
+
+PROBLEMA: "npm nao e reconhecido" — Mesma solucao do problema acima.
+
+PROBLEMA: "connect ECONNREFUSED 127.0.0.1:11434"
+    O Ollama nao esta rodando. Va la e inicie o Ollama:
+    • Menu Iniciar > digite "Ollama" > clique para abrir
+    • Ou procure o icone da cabra na bandeja do sistema
+
+PROBLEMA: "model 'job-analyzer' not found"
+    Voce nao baixou o modelo de IA. No PowerShell, digite:
+    ollama pull job-analyzer
+    Aguarde o download terminar.
+
+PROBLEMA: "Cannot find module 'better-sqlite3'"
+    As dependencias nao foram instaladas. Va na pasta do projeto e
+    digite: npm install
+
+PROBLEMA: "Porta 3001 em uso"
+    Algo ja esta usando a porta 3001. Digite:
+    npx kill-port 3001
+    Depois tente: npm start
+
+PROBLEMA: A pagina abre mas fica toda branca
+    • Verifique se o terminal ainda mostra "API rodando..."
+    • Aperte F5 para recarregar
+    • Se continuar, reinicie o servidor (Ctrl+C no terminal, depois
+      npm start de novo)
+
+PROBLEMA: "SyntaxError" ou "Unexpected token" ao editar sample_cv.json
+    Voce apagou uma virgula ou chave sem querer. Baixe o arquivo
+    original do GitHub de novo e edite com cuidado — nao apague
+    nenhum simbolo como { } [ ] , :
+
+PROBLEMA: Nao aparece o percentual de match (fica "—")
+    • O curriculo base (sample_cv.json) precisa estar preenchido
+    • A vaga precisa ter skills extraidas (required_skills)
+    • Verifique se o Ollama esta rodando
+
+PROBLEMA: "Ollama" demora muito para responder
+    Normal na primeira vez. O modelo precisa carregar na memoria.
+    Nas proximas vezes sera mais rapido.
+
+
+=============================================================================
+COMANDOS RAPIDOS (RESUMO)
+=============================================================================
+
+  INICIAR O SERVIDOR:
+    npm start
+
+  PARAR O SERVIDOR:
+    Pressione Ctrl + C no terminal
+
+  LIBERAR A PORTA (se aparecer "porta ocupada"):
+    npx kill-port 3001
+
+  INICIAR EM MODO DESENVOLVIMENTO (atualiza automaticamente quando
+  voce edita os arquivos):
+    npm run dev
+
+
+=============================================================================
+COMO CRIAR UM ATALHO PARA INICIAR RAPIDO
+=============================================================================
+
+Para nao precisar digitar comandos toda vez, crie um arquivo na
+Area de Trabalho:
+
+  1. Clique com o botao DIREITO na Area de Trabalho
+  2. Escolha "Novo" > "Arquivo de Texto"
+  3. Nomeie como "iniciar_ajustacv.bat" (o .bat e importante)
+  4. Clique SIM quando perguntar se quer mudar a extensao
+  5. Clique com o direito no arquivo > "Editar"
+  6. Cole dentro:
+
+        @echo off
+        cd /d C:\caminho\completo\ate\career-ai-agent
+        npm start
+        pause
+
+  (Troque o caminho pelo caminho REAL da sua pasta)
+  7. Salve e feche
+  8. Agora e so dar dois cliques nesse arquivo para iniciar tudo.
+
+
+=============================================================================
+ESTRUTURA DE PASTAS (PARA REFERENCIA)
+=============================================================================
+
+  career-ai-agent/
+  ├── backend/             — O servidor (a "cozinha" do programa)
+  │   ├── server.js        — Coracao do servidor
+  │   ├── matcher.js       — Calcula o match entre curriculo e vaga
+  │   ├── cv_generator.js  — Gera o curriculo otimizado
+  │   ├── cv_template.html — Molde do curriculo em HTML
+  │   └── uploads/         — Arquivos que voce anexar
+  ├── frontend/            — A parte visual (o que voce ve no navegador)
+  │   ├── index.html       — Pagina principal
+  │   ├── style.css        — Estilos e cores
+  │   ├── app.js           — Logica da interface
+  │   └── ds/              — Design System (cores, fontes, componentes)
+  ├── public/              — Curriculos gerados em HTML
+  ├── data/                — Cache dos curriculos gerados
+  ├── sample_cv.json       — SEU CURRICULO (arquivo que voce precisa editar)
+  ├── package.json         — Lista de dependencias do projeto
+  ├── setup_db.js          — Script para criar o banco de dados
+  └── career_agent.db      — Banco de dados com suas vagas
+
+
+=============================================================================
+DICAS IMPORTANTES
+=============================================================================
+
+  1.  OLLAMA SEMPRE RODANDO — O Ollama (icone da cabra) precisa estar
+      ativo no seu computador sempre que voce for usar o AjustaCV. Se
+      ele nao estiver rodando, o programa nao consegue analisar vagas
+      nem gerar curriculos.
+
+  2.  TUDO E LOCAL — Nenhum dado sai do seu computador. O AjustaCV
+      funciona 100% offline. Suas vagas e seu curriculo nunca vao
+      para a internet.
+
+  3.  DEIXE O TERMINAL ABERTO — Enquanto o AjustaCV estiver rodando,
+      a janela do PowerShell precisa ficar aberta. Voce pode minimizar,
+      mas nao feche. Quando quiser parar, e so apertar Ctrl+C.
+
+  4.  PRIMEIRA VEZ E MAIS LENTA — A primeira vaga que voce processar
+      pode levar ate 1 minuto. O modelo de IA precisa carregar na
+      memoria. Depois disso, fica mais rapido.
+
+  5.  FACA BACKUP — Suas vagas ficam salvas no arquivo
+      "career_agent.db". Periodicamente, copie esse arquivo para
+      um pendrive ou nuvem (Google Drive, Dropbox) para nao perder
+      seus dados.
+
+  6.  SE DER ERRO — Reinicie o servidor (Ctrl+C no terminal, depois
+      npm start de novo). Muitos problemas se resolvem assim.
+
+  7.  NAO MEXA NOS ARQUIVOS — A nao ser o sample_cv.json, voce nao
+      precisa editar nenhum outro arquivo do projeto.
+
+  8.  DUVIDAS? — Abra uma issue no GitHub:
+      https://github.com/almeidaDecio/career-ai-agent/issues
+
+
+╔══════════════════════════════════════════════════════════════════╗
+║  Criado em: junho de 2026                                      ║
+║  GitHub: https://github.com/almeidaDecio/career-ai-agent        ║
+║  Projeto: AjustaCV — Gerenciador de Candidaturas               ║
+╚══════════════════════════════════════════════════════════════════╝
