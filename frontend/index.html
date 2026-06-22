@@ -25,6 +25,7 @@
         <button class="search-clear hidden" id="btnClearSearch" title="Limpar busca">&times;</button>
       </div>
       <button class="btn btn--secondary" id="btnImportarCV">Importar CV</button>
+      <button class="btn btn--secondary" id="btnImportarLinkedIn">Importar do LinkedIn</button>
       <button class="btn btn--primary" id="btnNovaVaga">Nova Vaga</button>
     </div>
   </header>
@@ -93,6 +94,10 @@
         <button class="btn-close dialog__close" id="btnCloseNova">&times;</button>
       </div>
       <div class="modal-body dialog__body">
+        <div id="linkedinUrlRow" class="hidden" style="margin-bottom:12px;padding:8px 10px;background:var(--color-surface-tertiary);border-radius:var(--radius-md);display:flex;align-items:center;gap:8px">
+          <a id="linkedinUrlLink" href="#" target="_blank" rel="noopener" style="flex:1;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--color-text-link)"></a>
+          <button class="btn btn--ghost" id="btnCopyLinkedinUrl" type="button" style="padding:4px 10px;font-size:12px">Copiar link</button>
+        </div>
         <label for="empresaNome">Nome da Empresa</label>
         <input type="text" id="empresaNome" placeholder="Ex: Stone, Nubank, VTEX..." style="margin-bottom:12px;width:100%;padding:8px 10px;border:1px solid var(--color-border-default);border-radius:var(--radius-md);background:var(--color-surface-tertiary);color:var(--color-text-primary);font-family:var(--font-family-primary);font-size:13px;outline:none;box-sizing:border-box">
         <label for="jobTitleInput">Título da vaga</label>

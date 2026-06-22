@@ -97,6 +97,9 @@ function cardHTML(j) {
   if (days > 30) timeTag = '<span class="card-time-tag overdue">30+ dias</span>';
   else if (days > 15) timeTag = '<span class="card-time-tag warning">15+ dias</span>';
   const dateBR = formatDateBR(appliedDate);
+  let importTag = '';
+  if (j.import_status === 'sem_dados') importTag = '<span class="card-time-tag warning">sem dados</span>';
+  else if (j.import_status === 'repetida') importTag = '<span class="card-time-tag overdue">repetida</span>';
   return `
     <div class="card" draggable="true" data-id="${j.id}" onclick="openDetail(${j.id})">
       <button class="card-delete" onclick="event.stopPropagation();confirmDelete(${j.id})" title="Excluir">
@@ -108,6 +111,7 @@ function cardHTML(j) {
           ${company ? `<div class="card-company">${title}</div>` : ''}
           <div class="card-meta">
             ${dateBR ? `<span class="card-date">${dateBR}</span>` : ''}
+            ${importTag}
             ${timeTag}
           </div>
         </div>
@@ -192,8 +196,66 @@ document.getElementById('btnFormatarCV').addEventListener('click', async () => {
   btn.disabled = false;
 });
 
+// Importar do LinkedIn (triagem)
+let _triagemJobId = null; // null = modo Nova Vaga normal; número = completando vaga importada
+
+document.getElementById('btnImportarLinkedIn').addEventListener('click', async () => {
+  const btn = document.getElementById('btnImportarLinkedIn');
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = 'Buscando no LinkedIn... (pode levar até 4 min)';
+  try {
+    const r = await fetch(`${API}/api/jobs/import-batch`, { method: 'POST' });
+    const result = await r.json();
+    if (result.success) {
+      const restantes = (result.runs_max || 2) - (result.runs_today || 0);
+      showToast(`${result.imported} vaga(s) nova(s), ${result.repeated} repetida(s) — ${restantes} busca(s) restante(s) hoje`);
+      loadJobs();
+    } else {
+      showError('Erro ao importar', result.error || 'Não foi possível importar as vagas.');
+    }
+  } catch (e) {
+    showError('Erro de conexão', 'Não foi possível conectar ao servidor.', `POST /api/jobs/import-batch — ${e.message}`);
+  }
+  btn.disabled = false;
+  btn.textContent = originalText;
+});
+
+function openTriagemModal(job) {
+  _triagemJobId = job.id;
+  document.getElementById('modalNovaVaga').classList.remove('hidden');
+  document.getElementById('empresaContext').value = '';
+  document.getElementById('empresaNome').value = job.company && job.company !== 'null' ? job.company : '';
+  document.getElementById('jobTitleInput').value = job.job_title || '';
+  document.getElementById('requisitosVaga').value = '';
+  document.getElementById('extractStatus').textContent = '';
+  document.getElementById('btnProcessar').disabled = true;
+
+  const urlRow = document.getElementById('linkedinUrlRow');
+  const urlLink = document.getElementById('linkedinUrlLink');
+  if (job.linkedin_url) {
+    urlRow.classList.remove('hidden');
+    urlLink.href = job.linkedin_url;
+    urlLink.textContent = job.linkedin_url;
+  } else {
+    urlRow.classList.add('hidden');
+  }
+}
+
+document.getElementById('btnCopyLinkedinUrl').addEventListener('click', () => {
+  const url = document.getElementById('linkedinUrlLink').href;
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.getElementById('btnCopyLinkedinUrl');
+    const original = btn.textContent;
+    btn.textContent = 'Copiado!';
+    setTimeout(() => { btn.textContent = original; }, 1500);
+  });
+});
+
 // Nova Vaga
 document.getElementById('btnNovaVaga').addEventListener('click', () => {
+  _triagemJobId = null;
+  document.getElementById('linkedinUrlRow').classList.add('hidden');
   document.getElementById('modalNovaVaga').classList.remove('hidden');
   document.getElementById('empresaContext').value = '';
   document.getElementById('empresaNome').value = '';
@@ -228,6 +290,7 @@ document.getElementById('btnProcessar').addEventListener('click', async () => {
   try {
     const body = { empresa_context: empresa, empresa_nome: empresaNome, requisitos, applied_date: appliedDate };
     if (jobTitle) body.job_title = jobTitle;
+    if (_triagemJobId) body.job_id = _triagemJobId;
     const r = await fetch(`${API}/api/extract`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
@@ -237,6 +300,7 @@ document.getElementById('btnProcessar').addEventListener('click', async () => {
       statusEl.className = 'modal-status success';
       statusEl.textContent = `✅ ${result.data.job_title || 'Vaga'} — ${empresaNome || result.data.company || 'sem empresa'} salva! Gerando CV...`;
       document.getElementById('modalNovaVaga').classList.add('hidden');
+      _triagemJobId = null;
       loadJobs();
       _pendingCVJobId = result.id;
       showToast('Gerando CV automaticamente...');
@@ -534,6 +598,14 @@ function toggleCollapsibleCard(el) {
 async function openDetail(id) {
   const r = await fetch(`${API}/api/jobs/${id}`);
   const job = await r.json();
+
+  // Vaga importada do LinkedIn ainda sem dados completos — abre o modal de
+  // completar em vez do painel de detalhes normal.
+  if (job.import_status === 'sem_dados' || job.import_status === 'repetida') {
+    openTriagemModal(job);
+    return;
+  }
+
   document.getElementById('detailTitle').textContent = job.job_title || 'Vaga';
   const body = document.getElementById('detailBody');
   const score = job.matching_score || job.score || null;

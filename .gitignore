@@ -5,3 +5,5 @@ node_modules/
 data/
 public/
 career-ai-agent/
+linkedin-jobs/jobs_new.json
+linkedin-jobs/execucoes.json

@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const net = require('net');
+const { execFile } = require('child_process');
 const matcher = require('./matcher');
 const cvGenerator = require('./cv_generator');
 const skillExpander = require('./skill_expander');
@@ -55,6 +56,124 @@ app.get('/api/jobs/:id', (req, res) => {
     responsibilities: safeJson(row.responsibilities),
     tools: safeJson(row.tools),
     ats_keywords: safeJson(row.ats_keywords)
+  });
+});
+
+// Caminhos fixos do scraper de LinkedIn (dentro da pasta do projeto)
+const LINKEDIN_JOBS_DIR = path.join(__dirname, '..', 'linkedin-jobs');
+const LINKEDIN_JOBS_PATH = path.join(LINKEDIN_JOBS_DIR, 'jobs_new.json');
+const LINKEDIN_SCRIPT_PATH = path.join(LINKEDIN_JOBS_DIR, 'linkedin_jobs_designer.py');
+const LINKEDIN_RUNS_PATH = path.join(LINKEDIN_JOBS_DIR, 'execucoes.json');
+const LINKEDIN_MAX_RUNS_PER_DAY = 2;
+const LINKEDIN_SCRIPT_TIMEOUT_MS = 5 * 60 * 1000; // 5 min (script tem deadline interno de 4 min)
+
+function hojeISO() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function lerExecucoesHoje() {
+  try {
+    const data = JSON.parse(fs.readFileSync(LINKEDIN_RUNS_PATH, 'utf8'));
+    if (data.date !== hojeISO()) return 0; // virou o dia, zera contagem
+    return data.count || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function registrarExecucao() {
+  const count = lerExecucoesHoje() + 1;
+  if (!fs.existsSync(LINKEDIN_JOBS_DIR)) fs.mkdirSync(LINKEDIN_JOBS_DIR, { recursive: true });
+  fs.writeFileSync(LINKEDIN_RUNS_PATH, JSON.stringify({ date: hojeISO(), count }), 'utf8');
+  return count;
+}
+
+// Importar vagas em lote do scraper de LinkedIn (triagem)
+// Roda o script Python (que busca vagas reais no LinkedIn), espera terminar,
+// lê o jobs_new.json gerado e cria um card por vaga. Limitado a
+// LINKEDIN_MAX_RUNS_PER_DAY execuções por dia para evitar chamar atenção
+// do LinkedIn com buscas repetidas do mesmo IP.
+// Vagas com linkedin_job_id já visto antes entram marcadas como "repetida",
+// em vez de serem ignoradas — fica visível pro usuário decidir o que fazer.
+app.post('/api/jobs/import-batch', (req, res) => {
+  const jaExecutou = lerExecucoesHoje();
+  if (jaExecutou >= LINKEDIN_MAX_RUNS_PER_DAY) {
+    return res.status(429).json({
+      error: `Limite de ${LINKEDIN_MAX_RUNS_PER_DAY} buscas por dia atingido. Tente novamente amanhã.`,
+      runs_today: jaExecutou
+    });
+  }
+
+  if (!fs.existsSync(LINKEDIN_SCRIPT_PATH)) {
+    return res.status(404).json({
+      error: `Script não encontrado: ${LINKEDIN_SCRIPT_PATH}. Coloque o linkedin_jobs_designer.py dentro da pasta linkedin-jobs.`
+    });
+  }
+
+  execFile('python', [LINKEDIN_SCRIPT_PATH], {
+    timeout: LINKEDIN_SCRIPT_TIMEOUT_MS,
+    env: { ...process.env, LINKEDIN_OUTPUT_DIR: LINKEDIN_JOBS_DIR }
+  }, (err, stdout, stderr) => {
+    const runsHoje = registrarExecucao();
+
+    if (err) {
+      console.error('import-batch: erro ao rodar script Python:', err.message, stderr);
+      return res.status(500).json({
+        error: `Falha ao rodar o scraper: ${err.message}`,
+        runs_today: runsHoje
+      });
+    }
+
+    try {
+      if (!fs.existsSync(LINKEDIN_JOBS_PATH)) {
+        return res.status(404).json({
+          error: 'Script rodou mas jobs_new.json não foi encontrado.',
+          runs_today: runsHoje
+        });
+      }
+
+      const raw = fs.readFileSync(LINKEDIN_JOBS_PATH, 'utf8');
+      const scrapedJobs = JSON.parse(raw);
+
+      if (!Array.isArray(scrapedJobs)) {
+        return res.status(400).json({ error: 'jobs_new.json não contém uma lista de vagas válida', runs_today: runsHoje });
+      }
+
+      const existingIds = new Set(
+        db.prepare('SELECT linkedin_job_id FROM vagas WHERE linkedin_job_id IS NOT NULL').all()
+          .map(r => r.linkedin_job_id)
+      );
+
+      let imported = 0;
+      let repeated = 0;
+
+      const insertStmt = db.prepare(`INSERT INTO vagas
+        (job_title, company, location, linkedin_url, linkedin_job_id, import_status, status)
+        VALUES (?, ?, ?, ?, ?, ?, 'triagem')`);
+
+      for (const job of scrapedJobs) {
+        const isRepeated = existingIds.has(job.id);
+        insertStmt.run(
+          job.title || null,
+          job.company || null,
+          job.location || null,
+          job.url || null,
+          job.id || null,
+          isRepeated ? 'repetida' : 'sem_dados'
+        );
+        if (isRepeated) repeated++; else imported++;
+        if (job.id) existingIds.add(job.id);
+      }
+
+      res.json({
+        success: true, imported, repeated, total: scrapedJobs.length,
+        runs_today: runsHoje, runs_max: LINKEDIN_MAX_RUNS_PER_DAY
+      });
+    } catch (e) {
+      console.error('import-batch error:', e);
+      res.status(500).json({ error: e.message, runs_today: runsHoje });
+    }
   });
 });
 
@@ -610,9 +729,12 @@ function extractJson(raw) {
 }
 
 // Extrair vaga com Ollama e salvar
+// Se job_id vier no corpo, atualiza uma vaga existente (caso de triagem do
+// LinkedIn) em vez de criar uma nova — e limpa o import_status, fazendo o
+// card voltar ao estado normal.
 app.post('/api/extract', async (req, res) => {
   try {
-    const { empresa_nome, empresa_context, requisitos, job_text, applied_date, job_title } = req.body;
+    const { empresa_nome, empresa_context, requisitos, job_text, applied_date, job_title, job_id } = req.body;
     const requisitosText = requisitos || job_text || '';
     if (!requisitosText) return res.status(400).json({ error: 'Campo requisitos é obrigatório' });
 
@@ -659,24 +781,55 @@ ${requisitosText}
     const match = matcher.run(v);
     const matchingScore = match.score;
 
-    const result = db.prepare(`INSERT INTO vagas
-      (job_title, company, seniority, experience_years_min, location,
-       required_skills, nice_to_have_skills, responsibilities, tools, ats_keywords,
-       job_text, matching_score, empresa_context, requisitos, applied_date)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
-      v.job_title || null, empresa_nome || v.company || null, v.seniority || null,
-      v.experience_years_min || null, v.location || null,
-      JSON.stringify(v.required_skills || []), JSON.stringify(v.nice_to_have_skills || []),
-      JSON.stringify(v.responsibilities || []), JSON.stringify(v.tools || []),
-      JSON.stringify(v.ats_keywords || []),
-      fullText,
-      matchingScore,
-      empresa_context || null,
-      requisitosText,
-      applied_date || null
-    );
+    let resultId;
 
-    res.json({ success: true, id: result.lastInsertRowid, data: v, matching_score: matchingScore });
+    if (job_id) {
+      // Vaga de triagem (importada do LinkedIn) sendo completada — UPDATE,
+      // preserva linkedin_url/linkedin_job_id, limpa import_status.
+      const existing = db.prepare('SELECT id FROM vagas WHERE id = ?').get(job_id);
+      if (!existing) return res.status(404).json({ error: 'Vaga não encontrada' });
+
+      db.prepare(`UPDATE vagas SET
+          job_title = ?, company = ?, seniority = ?, experience_years_min = ?, location = ?,
+          required_skills = ?, nice_to_have_skills = ?, responsibilities = ?, tools = ?, ats_keywords = ?,
+          job_text = ?, matching_score = ?, empresa_context = ?, requisitos = ?, applied_date = ?,
+          import_status = NULL
+        WHERE id = ?`).run(
+        v.job_title || null, empresa_nome || v.company || null, v.seniority || null,
+        v.experience_years_min || null, v.location || null,
+        JSON.stringify(v.required_skills || []), JSON.stringify(v.nice_to_have_skills || []),
+        JSON.stringify(v.responsibilities || []), JSON.stringify(v.tools || []),
+        JSON.stringify(v.ats_keywords || []),
+        fullText,
+        matchingScore,
+        empresa_context || null,
+        requisitosText,
+        applied_date || null,
+        job_id
+      );
+      resultId = Number(job_id);
+    } else {
+      // Fluxo normal de "Nova Vaga" — INSERT
+      const result = db.prepare(`INSERT INTO vagas
+        (job_title, company, seniority, experience_years_min, location,
+         required_skills, nice_to_have_skills, responsibilities, tools, ats_keywords,
+         job_text, matching_score, empresa_context, requisitos, applied_date)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+        v.job_title || null, empresa_nome || v.company || null, v.seniority || null,
+        v.experience_years_min || null, v.location || null,
+        JSON.stringify(v.required_skills || []), JSON.stringify(v.nice_to_have_skills || []),
+        JSON.stringify(v.responsibilities || []), JSON.stringify(v.tools || []),
+        JSON.stringify(v.ats_keywords || []),
+        fullText,
+        matchingScore,
+        empresa_context || null,
+        requisitosText,
+        applied_date || null
+      );
+      resultId = result.lastInsertRowid;
+    }
+
+    res.json({ success: true, id: resultId, data: v, matching_score: matchingScore });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -700,6 +853,10 @@ try { db.exec("ALTER TABLE vagas ADD COLUMN location TEXT"); } catch {}
 try { db.exec("ALTER TABLE vagas ADD COLUMN generated_at TEXT"); } catch {}
 try { db.exec("ALTER TABLE vagas ADD COLUMN empresa_context TEXT"); } catch {}
 try { db.exec("ALTER TABLE vagas ADD COLUMN requisitos TEXT"); } catch {}
+// Colunas da importação de vagas do LinkedIn (triagem)
+try { db.exec("ALTER TABLE vagas ADD COLUMN linkedin_url TEXT"); } catch {}
+try { db.exec("ALTER TABLE vagas ADD COLUMN linkedin_job_id TEXT"); } catch {}
+try { db.exec("ALTER TABLE vagas ADD COLUMN import_status TEXT"); } catch {}
 
 // Tabela de anexos
 db.exec(`
