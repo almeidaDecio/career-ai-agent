@@ -111,6 +111,7 @@ app.post('/api/jobs/:id/details', (req, res) => {
     if (row) {
       const jobText = row.requisitos || row.job_text || '';
       const job = {
+        job_title: row.job_title || null,
         required_skills: skillExpander.expand(safeJson(row.required_skills), jobText),
         nice_to_have_skills: skillExpander.expand(safeJson(row.nice_to_have_skills), jobText),
         tools: skillExpander.expand(safeJson(row.tools), jobText),
@@ -160,6 +161,7 @@ app.post('/api/jobs/:id/recalculate', (req, res) => {
     if (!row) return res.status(404).json({ error: 'Vaga não encontrada' });
     const jobText = row.requisitos || row.job_text || '';
     const job = {
+      job_title: row.job_title || null,
       required_skills: skillExpander.expand(safeJson(row.required_skills), jobText),
       nice_to_have_skills: skillExpander.expand(safeJson(row.nice_to_have_skills), jobText),
       tools: skillExpander.expand(safeJson(row.tools), jobText),
@@ -291,6 +293,7 @@ Preencha todos os campos. Se não encontrar, deixe string vazia ou array vazio.`
 
 // Gerar CV otimizado para a vaga
 function generateCVHTML(cv, job, id) {
+  cv.header_title = cvGenerator.computeHeaderTitle(cv, job);
   const sfExp = cv.experience.find(e => e.company.toLowerCase().includes('softfocus'));
   const ollamaResult = {
     resumo_ajustado: cv.summary,
@@ -317,6 +320,7 @@ app.post('/api/jobs/:id/generate-cv', async (req, res) => {
     const cachePath = path.join(__dirname, '..', 'data', `cv_cache_${req.params.id}.json`);
     const jobText = row.requisitos || row.job_text || '';
     const job = {
+      job_title: row.job_title || null,
       required_skills: skillExpander.expand(safeJson(row.required_skills), jobText),
       nice_to_have_skills: skillExpander.expand(safeJson(row.nice_to_have_skills), jobText),
       tools: skillExpander.expand(safeJson(row.tools), jobText),
@@ -325,6 +329,8 @@ app.post('/api/jobs/:id/generate-cv', async (req, res) => {
     let cv;
     if (fs.existsSync(cachePath)) {
       cv = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+      cv.header_title = cvGenerator.computeHeaderTitle(cv, job);
+      fs.writeFileSync(cachePath, JSON.stringify(cv, null, 2), 'utf8');
       db.prepare('UPDATE vagas SET generated_at = ? WHERE id = ?').run(new Date().toISOString(), req.params.id);
       const adjScore = generateCVHTML(cv, job, req.params.id);
       return res.json({ success: true, cv, adjusted_score: adjScore, cached: true });
@@ -335,6 +341,8 @@ app.post('/api/jobs/:id/generate-cv', async (req, res) => {
     } else {
       cv = await cvGenerator.generateForJob(job);
     }
+
+    cv.header_title = cvGenerator.computeHeaderTitle(cv, job);
 
     // Cache the Ollama-enhanced CV result
     const dataDir = path.join(__dirname, '..', 'data');
@@ -372,37 +380,44 @@ app.put('/api/jobs/:id/cv-cache', (req, res) => {
     if (!fs.existsSync(cachePath)) {
       return res.status(404).json({ error: 'Nenhum CV gerado ainda.' });
     }
-    const { cv } = req.body;
+    const { cv, job_title } = req.body;
     if (!cv) return res.status(400).json({ error: 'Campo cv é obrigatório' });
-    fs.writeFileSync(cachePath, JSON.stringify(cv, null, 2), 'utf8');
+    const row = db.prepare('SELECT * FROM vagas WHERE id = ?').get(req.params.id);
+    if (!row) return res.status(404).json({ error: 'Vaga não encontrada' });
+
+    const jobText = row.requisitos || row.job_text || '';
+    const normalizedJobTitle = typeof job_title === 'string' ? (job_title.trim() || null) : row.job_title || null;
+    const job = {
+      job_title: normalizedJobTitle,
+      required_skills: skillExpander.expand(safeJson(row.required_skills), jobText),
+      nice_to_have_skills: skillExpander.expand(safeJson(row.nice_to_have_skills), jobText),
+      tools: skillExpander.expand(safeJson(row.tools), jobText),
+      ats_keywords: skillExpander.expand(safeJson(row.ats_keywords), jobText)
+    };
+
+    if ('job_title' in req.body) {
+      db.prepare('UPDATE vagas SET job_title = ? WHERE id = ?').run(normalizedJobTitle, req.params.id);
+    }
+
+    const updatedCv = { ...cv, header_title: cvGenerator.computeHeaderTitle(cv, job) };
+    fs.writeFileSync(cachePath, JSON.stringify(updatedCv, null, 2), 'utf8');
 
     // Recalcular o adjusted_score e atualizar o HTML gerado
-    const row = db.prepare('SELECT * FROM vagas WHERE id = ?').get(req.params.id);
+    const sfExp = updatedCv.experience.find(e => e.company.toLowerCase().includes('softfocus'));
+    const ollamaResult = {
+      resumo_ajustado: updatedCv.summary,
+      softfocus_cargo: sfExp ? sfExp.role : 'Product Designer',
+      softfocus_periodo: sfExp && sfExp.period ? sfExp.period : 'jul/2021 – fev/2026',
+      softfocus_resultados: sfExp && sfExp.resultados ? sfExp.resultados : '',
+      softfocus_entregas_ajustadas: sfExp && sfExp.highlights ? sfExp.highlights : []
+    };
+    cvGenerator.generateHTML(updatedCv, ollamaResult);
+
     let score = null;
-    if (row) {
-      const jobText = row.requisitos || row.job_text || '';
-      const job = {
-        required_skills: skillExpander.expand(safeJson(row.required_skills), jobText),
-        nice_to_have_skills: skillExpander.expand(safeJson(row.nice_to_have_skills), jobText),
-        tools: skillExpander.expand(safeJson(row.tools), jobText),
-        ats_keywords: skillExpander.expand(safeJson(row.ats_keywords), jobText)
-      };
-
-      const sfExp = cv.experience.find(e => e.company.toLowerCase().includes('softfocus'));
-      const ollamaResult = {
-        resumo_ajustado: cv.summary,
-        softfocus_cargo: sfExp ? sfExp.role : 'Product Designer',
-        softfocus_periodo: sfExp && sfExp.period ? sfExp.period : 'jul/2021 – fev/2026',
-        softfocus_resultados: sfExp && sfExp.resultados ? sfExp.resultados : '',
-        softfocus_entregas_ajustadas: sfExp && sfExp.highlights ? sfExp.highlights : []
-      };
-      cvGenerator.generateHTML(cv, ollamaResult);
-
-      const matchAdj = matcher.runWithCV(cv, job);
-      if (matchAdj.score !== null) {
-        db.prepare('UPDATE vagas SET adjusted_score = ? WHERE id = ?').run(matchAdj.score, req.params.id);
-        score = matchAdj.score;
-      }
+    const matchAdj = matcher.runWithCV(updatedCv, job);
+    if (matchAdj.score !== null) {
+      db.prepare('UPDATE vagas SET adjusted_score = ? WHERE id = ?').run(matchAdj.score, req.params.id);
+      score = matchAdj.score;
     }
 
     res.json({ success: true, adjusted_score: score });
@@ -426,6 +441,7 @@ app.post('/api/jobs/:id/save-cv-file', async (req, res) => {
     } else {
       const jobText = row.requisitos || row.job_text || '';
       const job = {
+        job_title: row.job_title || null,
         required_skills: skillExpander.expand(safeJson(row.required_skills), jobText),
         nice_to_have_skills: skillExpander.expand(safeJson(row.nice_to_have_skills), jobText),
         tools: skillExpander.expand(safeJson(row.tools), jobText),
@@ -525,6 +541,16 @@ app.post('/api/jobs/:id/export-pdf', async (req, res) => {
     }
 
     const cv = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+    const jobText = row.requisitos || row.job_text || '';
+    const job = {
+      job_title: row.job_title || null,
+      required_skills: skillExpander.expand(safeJson(row.required_skills), jobText),
+      nice_to_have_skills: skillExpander.expand(safeJson(row.nice_to_have_skills), jobText),
+      tools: skillExpander.expand(safeJson(row.tools), jobText),
+      ats_keywords: skillExpander.expand(safeJson(row.ats_keywords), jobText)
+    };
+    cv.header_title = cvGenerator.computeHeaderTitle(cv, job);
+    fs.writeFileSync(cachePath, JSON.stringify(cv, null, 2), 'utf8');
     const sfExp = cv.experience.find(e => e.company.toLowerCase().includes('softfocus'));
     const ollamaResult = {
       resumo_ajustado: cv.summary,
@@ -586,7 +612,7 @@ function extractJson(raw) {
 // Extrair vaga com Ollama e salvar
 app.post('/api/extract', async (req, res) => {
   try {
-    const { empresa_nome, empresa_context, requisitos, job_text, applied_date } = req.body;
+    const { empresa_nome, empresa_context, requisitos, job_text, applied_date, job_title } = req.body;
     const requisitosText = requisitos || job_text || '';
     if (!requisitosText) return res.status(400).json({ error: 'Campo requisitos é obrigatório' });
 
@@ -624,6 +650,7 @@ ${requisitosText}
     const raw = await callOllama(extractPrompt);
     const v = extractJson(raw);
 
+    v.job_title = job_title || v.job_title || null;
     v.required_skills = skillExpander.expand(v.required_skills || [], requisitosText);
     v.nice_to_have_skills = skillExpander.expand(v.nice_to_have_skills || [], requisitosText);
     v.tools = skillExpander.expand(v.tools || [], requisitosText);

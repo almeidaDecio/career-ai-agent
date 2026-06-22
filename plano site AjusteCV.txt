@@ -11,3 +11,90 @@
 - Dashboard (já funcionando) - ajustar para usuário
 
 configurações para vários tipos de profissões
+
+npm run dev
+
+Melhorias
+
+# Melhorias de Usabilidade — AjustaCV
+
+Documento gerado a partir de uma análise de usabilidade simulada com 4 personas, baseada em 5 prints do dashboard, do modal de Nova Vaga e do modal de detalhe da vaga.
+
+---
+
+## 1. Mariana — designer júnior, baixa fluência com ferramentas técnicas
+
+### Problema 1: Dois números de match sem explicação
+No modal de detalhe da vaga aparecem "Match entre vaga e CV base" (88%) e "Match entre vaga e CV ajustado" (91%), sem nenhuma indicação visual do que diferencia um do outro. Mariana não sabe se precisa fazer algo pra "ativar" o ajustado ou se isso já é automático.
+
+**Melhoria proposta:** adicionar um ícone de informação (ⓘ) ao lado de "Match entre vaga e CV ajustado", com tooltip curto explicando: *"Recalculado depois dos ajustes feitos pela IA especificamente pra essa vaga."* Alternativa mais simples: um microcopy de uma linha abaixo dos dois números.
+
+### Problema 2: Jargão técnico confuso no formulário
+O campo "Contexto da Empresa" no modal de Nova Vaga vem com a observação "não será analisado pelo Ollama" — termo técnico que não significa nada pra um usuário não-técnico, e gera dúvida sobre se vale a pena preencher o campo.
+
+**Melhoria proposta:** trocar por linguagem orientada a benefício, sem expor nome de ferramenta interna: *"Esse texto é só pra sua referência — não interfere no cálculo de match."*
+
+---
+
+## 2. Roberto — usuário avançado, usa o app todo dia, quer velocidade
+
+### Problema 1: Falta de filtros nas colunas do kanban
+Com 31 vagas em "Aplicadas", só existe busca por texto no topo. Não há filtro por faixa de match, data ou empresa — pra ver só vagas com match acima de 80%, por exemplo, é preciso rolar manualmente.
+
+**Melhoria proposta:** adicionar filtros rápidos por coluna (chips ou dropdown): ordenar por match, filtrar por faixa de match, por data de aplicação, por empresa.
+
+### Problema 2: Accordions mutuamente exclusivos
+No modal de detalhe da vaga, os accordions (Diferenciais, Ferramentas Exigidas, ATS Keywords, Responsabilidades) abrem um por vez e fecham os outros automaticamente. Pra comparar Skills Requeridas com ATS Keywords lado a lado, é preciso abrir, decorar, fechar, abrir o outro.
+
+**Melhoria proposta:** permitir múltiplos accordions abertos simultaneamente (comportamento independente, não exclusivo), ou adicionar um botão "Expandir tudo".
+
+---
+
+## 3. Sandra — preocupação com acessibilidade visual
+
+### Problema 1: Contraste no limite mínimo
+O tema escuro tem bom contraste geral entre texto branco e fundo, mas o texto secundário cinza-claro (datas, placeholders como "Cidade, Estado ou Remoto") fica perto do limite mínimo de contraste, especialmente em fonte pequena nos cards do kanban.
+
+**Melhoria proposta:** auditar contraste contra o padrão WCAG AA (mínimo 4.5:1 pra texto normal, 3:1 pra texto grande) e ajustar o tom de cinza dos textos secundários e placeholders onde necessário.
+
+### Problema 2: Badges dependem só de cor
+Os contadores nos badges (ex: "ATS KEYWORDS 8") usam só a cor de fundo pra indicar "seção com conteúdo" — sem reforço visual pra quem tem dificuldade de distinguir cor.
+
+**Melhoria proposta:** reforçar com peso de fonte (bold) no número quando maior que zero, ou adicionar um indicador não-cromático adicional (ex: ponto sólido vs. vazio) além da cor de fundo.
+
+---
+
+## 4. Felipe — buscando emprego, ansioso, olha o app todo dia esperando notícia
+
+### Problema 1: Métrica ambígua emocionalmente
+O número "78% Taxa Match médio" no topo do dashboard não tem nenhuma referência (média do mercado, meta pessoal, etc.) — não está claro se é um bom ou mau número.
+
+**Melhoria proposta:** adicionar contexto comparativo, como uma etiqueta "Acima da média das suas vagas" ou um indicador de tendência (↑ desde o mês passado), e/ou um tooltip deixando claro que esse número não é uma nota de desempenho pessoal.
+
+### Problema 2: Funil sem contexto pode reforçar ansiedade
+O desequilíbrio entre "31 aplicadas" e "2 finalizadas" aparece sem nenhum texto de apoio — pode reforçar a sensação de que algo está errado, quando na verdade é um funil normal de busca de emprego.
+
+**Melhoria proposta:** adicionar um texto de apoio no dashboard (ex: *"Funil normal: a maioria das candidaturas não avança — isso é esperado"*), ou transformar a barra de stats numa pequena visualização de funil com expectativa de conversão.
+
+### Problema 3: Campo vazio parece tarefa pendente
+O campo "Tipo de Entrevista" aparece vazio com "— Selecione —" em vagas que já têm match calculado, dando a sensação de tarefa pendente não resolvida, mesmo sem entrevista marcada.
+
+**Melhoria proposta:** só exibir esse campo depois que a vaga for movida pra coluna "Entrevistas", ou trocar o texto padrão por algo neutro como "Ainda sem entrevista agendada", que não pareça formulário incompleto.
+
+---
+
+## Resumo priorizado
+
+| # | Problema | Persona | Prioridade | Esforço |
+|---|----------|---------|------------|---------|
+| 1 | Diferença entre match base/ajustado não explicada | Mariana | Alta | Baixo |
+| 2 | Menção a "Ollama" no formulário | Mariana | Alta | Baixo |
+| 3 | Falta de filtros no kanban | Roberto | Média | Médio |
+| 4 | Accordions mutuamente exclusivos | Roberto | Baixa | Baixo |
+| 5 | Contraste de texto secundário | Sandra | Alta | Baixo |
+| 6 | Badges dependentes só de cor | Sandra | Média | Baixo |
+| 7 | Taxa de match sem referência | Felipe | Média | Baixo |
+| 8 | Funil sem contexto emocional | Felipe | Média | Baixo |
+| 9 | Campo de entrevista parece pendência | Felipe | Alta | Baixo |
+
+*Prioridade e esforço são estimativas qualitativas, pra orientar por onde começar — não substituem validação com usuários reais.*

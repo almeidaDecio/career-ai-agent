@@ -56,6 +56,85 @@ function ensureFixedMetrics(entregas) {
   return [...toInject, ...result];
 }
 
+// ── Detecta redundância entre bullets (word overlap ≥ threshold) ────
+function normalizeWord(w) {
+  return w.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '');
+}
+
+function significantWords(text) {
+  return text.split(/\s+/).filter(w => w.length > 3).map(normalizeWord);
+}
+
+function wordOverlapRatio(a, b) {
+  const wa = significantWords(a);
+  const wb = significantWords(b);
+  if (!wa.length || !wb.length) return 0;
+  const matches = wa.filter(w => wb.some(x => w.includes(x) || x.includes(w)));
+  return matches.length / Math.max(wa.length, wb.length);
+}
+
+function removeRedundantBullets(bullets, threshold = 0.4) {
+  const result = [];
+  for (const b of bullets) {
+    const redundant = result.some(existing => wordOverlapRatio(b, existing) >= threshold);
+    if (!redundant) result.push(b);
+  }
+  return result;
+}
+// ─────────────────────────────────────────────────────────────────────
+
+// ── Título dinâmico do cabeçalho — baseado no job_title da vaga ────────
+// Lista de títulos do candidato vem do current_title do CV base
+// (ex: "Product Designer | UX Designer | UI Designer").
+function candidateTitlesFromCV(cv) {
+  const raw = (cv && cv.current_title) || 'Product Designer';
+  return raw.split('|').map(t => t.trim()).filter(Boolean);
+}
+
+// Considera o job_title genérico demais pra usar sozinho (ex: só "Designer")
+function isGenericTitle(title) {
+  if (!title) return true;
+  const t = title.trim();
+  if (t.length < 5) return true;
+  const genericOnly = /^designer$|^design(er)?\s+ux\/?ui$/i;
+  return genericOnly.test(t);
+}
+
+// Escolhe o título de cabeçalho: usa o job_title extraído da vaga se for
+// específico o bastante; caso contrário, escolhe o título do candidato
+// mais próximo do contexto da vaga (skills + responsabilidades); se nada
+// bater bem, cai pro primeiro título da lista do candidato.
+function pickHeaderTitle(job, candidateTitles) {
+  const jobTitle = job && job.job_title ? String(job.job_title).trim() : '';
+  if (jobTitle && !isGenericTitle(jobTitle)) {
+    return jobTitle;
+  }
+
+  const jobContext = [
+    jobTitle,
+    ...(job?.required_skills || []),
+    ...(job?.responsibilities || [])
+  ].join(' ');
+
+  if (jobContext.trim()) {
+    let best = null;
+    let bestScore = 0;
+    for (const title of candidateTitles) {
+      const score = wordOverlapRatio(title, jobContext);
+      if (score > bestScore) {
+        bestScore = score;
+        best = title;
+      }
+    }
+    if (best && bestScore > 0) return best;
+  }
+
+  return candidateTitles[0] || 'Product Designer';
+}
+// ─────────────────────────────────────────────────────────────────────
+
 // Detecta termos estruturantes na vaga e gera instrução adicional para o prompt
 function detectStructuralTerms(job) {
   const jobText = JSON.stringify(job).toLowerCase();
@@ -159,10 +238,12 @@ function extractJson(raw) {
 
 function generate(cv, job) {
   const { matched, unmatched } = findMatches(cv, job);
+  const headerTitle = pickHeaderTitle(job, candidateTitlesFromCV(cv));
 
   return {
     name: cv.name,
     current_title: cv.current_title,
+    header_title: headerTitle,
     summary: cv.summary,
     skills_ordered: [...matched, ...unmatched],
     matched_skills: matched,
@@ -216,6 +297,7 @@ ${softfocusText}
 5. Estrutura obrigatória para bullets: verbo forte + resultado + ferramenta + contexto. Ex: "Desenvolvi protótipos de alta fidelidade no Figma que antecipavam decisões e reduziam retrabalho em sprint."
 6. PARALELISMO OBRIGATÓRIO NA SOFTFOCUS: Inicie TODOS os bullets com verbos no passado (ex: "Desenvolvi...", "Conduzi...", "Estruturei...", "Colaborei..."). Nunca use substantivos de ação como "Desenvolvimento..." ou verbos no infinitivo.
 7. Mantenha exatamente de 6 a 8 bullets na Softfocus.
+7.1. CADA BULLET DEVE SER DISTINTO — não repita a mesma conquista, ferramenta ou responsabilidade com palavras diferentes. Se um bullet já menciona prototipagem de alta fidelidade, o próximo não deve falar de prototipagem novamente. Cada bullet cobre um resultado, ferramenta ou responsabilidade único.
 8. Mantenha as datas e dados quantitativos intactos.
 9. REGRA OBRIGATÓRIA — RESULTADOS QUANTITATIVOS DA SOFTFOCUS:
    Os bullets abaixo DEVEM aparecer nos softfocus_entregas_ajustadas
@@ -340,7 +422,14 @@ ${structuralTermsRule}
         return t;
       })
       .filter(Boolean)
-      .filter(b => b.length > 10);
+      .filter(b => b.length > 10)
+      .filter(b => !isDuplicateOfFixed(b));
+
+    // Remove bullets redundantes (≥40% de sobreposição de palavras significativas)
+    ollamaResult.softfocus_entregas_ajustadas = removeRedundantBullets(
+      ollamaResult.softfocus_entregas_ajustadas,
+      0.4
+    );
   }
 
   const dict = loadDict();
@@ -365,6 +454,7 @@ ${structuralTermsRule}
   return {
     name: base.name,
     current_title: base.current_title,
+    header_title: base.header_title,
     summary: finalSummary,
     skills_ordered: enrichedSkills,
     matched_skills: base.matched_skills,
@@ -379,6 +469,10 @@ function generateFromData(cvData, job) {
   return base;
 }
 
+function computeHeaderTitle(cv, job) {
+  return pickHeaderTitle(job, candidateTitlesFromCV(cv));
+}
+
 function capitalizeSkill(s) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
@@ -387,7 +481,11 @@ function generateHTML(cv, ollamaResult) {
   cv.skills_ordered = sanitizeSkills([...cv.skills_ordered]);
   const skillsHTML = cv.skills_ordered.map(capitalizeSkill).join(' | ');
 
-  const cleanBullet = s => s.replace(/^[\s•\-–\*]+/, '').trim();
+  const cleanBullet = s => s
+    .replace(/^[\s•\-–\*]+/, '')
+    .replace(/[\s•\-–\*]+$/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 
   const entregas = ollamaResult.softfocus_entregas_ajustadas || [];
   const fixedMetricsHTML = FIXED_METRICS
@@ -396,11 +494,14 @@ function generateHTML(cv, ollamaResult) {
   const dynamicBulletsHTML = entregas
     .filter(e => !FIXED_METRICS.includes(e))
     .filter(e => !isDuplicateOfFixed(e))
-    .map(m => `<li>${cleanBullet(m)}</li>`).join('\n        ');
+    .map(m => `<li>${cleanBullet(m)}</li>`)
+    .filter(html => html.length > 10)
+    .join('\n        ');
 
   let template = fs.readFileSync(path.join(__dirname, 'cv_template.html'), 'utf8');
 
   let html = template
+    .replace('{{header_title}}', cv.header_title || cv.current_title || 'Product Designer')
     .replace('{{resumo_ajustado}}', ollamaResult.resumo_ajustado || cv.summary)
     .replace('{{skills_list}}', skillsHTML)
     .replace('{{softfocus_periodo}}', ollamaResult.softfocus_periodo || '')
@@ -478,7 +579,7 @@ ${style}
 
   <header class="header">
     <div class="header-name">${esc(cv.name) || 'Currículo'}</div>
-    <div class="header-title">Product Designer | Designer UX/UI | Service Designer | Designer de Produtos</div>
+    <div class="header-title">${esc(cv.header_title || cv.current_title || 'Product Designer')}</div>
     ${contactsHTML ? `<div class="contacts">${contactsHTML}</div>` : ''}
     <div style="font-size:11.5px;color:var(--ink-light);margin-top:8px">Porecatu – PR (Disponível para atuação Remota ou Híbrida em Maringá/Londrina e região)</div>
   </header>
@@ -515,7 +616,14 @@ ${style}
 
 </div>
 <script>window.onload = function () {
-  if (window.location.search.includes('print=true')) setTimeout(function () { window.print(); }, 500);
+  if (window.location.search.includes('print=true')) {
+    var printed = false;
+    var doPrint = function () { if (!printed) { printed = true; window.print(); } };
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(doPrint).catch(doPrint);
+    }
+    setTimeout(doPrint, 1500); // fallback de seguranca caso fonts.ready nao resolva
+  }
 };<\/script>
 </body>
 </html>`;
@@ -527,4 +635,4 @@ ${style}
   return outPath;
 }
 
-module.exports = { generateForJob, generateFromData, generateHTML, generateExternalHTML };
+module.exports = { generateForJob, generateFromData, generateHTML, generateExternalHTML, computeHeaderTitle };

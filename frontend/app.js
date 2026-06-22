@@ -197,6 +197,7 @@ document.getElementById('btnNovaVaga').addEventListener('click', () => {
   document.getElementById('modalNovaVaga').classList.remove('hidden');
   document.getElementById('empresaContext').value = '';
   document.getElementById('empresaNome').value = '';
+  document.getElementById('jobTitleInput').value = '';
   document.getElementById('requisitosVaga').value = '';
   document.getElementById('extractStatus').textContent = '';
   document.getElementById('btnProcessar').disabled = true;
@@ -214,6 +215,7 @@ document.getElementById('requisitosVaga').addEventListener('input', e => {
 document.getElementById('btnProcessar').addEventListener('click', async () => {
   const empresa = document.getElementById('empresaContext').value.trim();
   const empresaNome = document.getElementById('empresaNome').value.trim();
+  const jobTitle = document.getElementById('jobTitleInput').value.trim();
   const requisitos = document.getElementById('requisitosVaga').value.trim();
   const statusEl = document.getElementById('extractStatus');
   const btn = document.getElementById('btnProcessar');
@@ -224,9 +226,11 @@ document.getElementById('btnProcessar').addEventListener('click', async () => {
   btn.disabled = true; statusEl.className = 'modal-status loading';
   statusEl.innerHTML = '<span class="spinner"></span> Processando com Ollama...';
   try {
+    const body = { empresa_context: empresa, empresa_nome: empresaNome, requisitos, applied_date: appliedDate };
+    if (jobTitle) body.job_title = jobTitle;
     const r = await fetch(`${API}/api/extract`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ empresa_context: empresa, empresa_nome: empresaNome, requisitos, applied_date: appliedDate })
+      body: JSON.stringify(body)
     });
     const result = await r.json();
     if (result.success) {
@@ -376,13 +380,18 @@ let _reviewBodyBackup = '';
 
 async function openReviewCV(id) {
   try {
-    const r = await fetch(`${API}/api/jobs/${id}/cv-cache`);
-    const data = await r.json();
-    if (!data.success) {
-      showToast(data.error || 'Nenhum CV gerado ainda.');
+    const [jobResponse, cvResponse] = await Promise.all([
+      fetch(`${API}/api/jobs/${id}`),
+      fetch(`${API}/api/jobs/${id}/cv-cache`)
+    ]);
+    const jobData = await jobResponse.json();
+    const cvData = await cvResponse.json();
+    if (!cvData.success) {
+      showToast(cvData.error || 'Nenhum CV gerado ainda.');
       return;
     }
-    const cv = data.cv;
+    const job = jobData;
+    const cv = cvData.cv;
     const body = document.getElementById('detailBody');
     _reviewBodyBackup = body.innerHTML;
 
@@ -391,6 +400,9 @@ async function openReviewCV(id) {
     body.innerHTML = `
       <div style="margin-bottom:16px">
         <div style="font-size:13px;font-weight:600;margin-bottom:12px">Revisar CV</div>
+
+        <label style="font-size:11px;color:var(--color-text-secondary);margin-bottom:4px;display:block">Título da vaga</label>
+        <input id="cvReviewJobTitle" type="text" value="${escapeHtml(job.job_title || '')}" style="width:100%;padding:8px 10px;border:1px solid var(--color-border-default);border-radius:6px;background:var(--color-surface-tertiary);color:var(--color-text-primary);font-size:13px;margin-bottom:12px" />
 
         <label style="font-size:11px;color:var(--color-text-secondary);margin-bottom:4px;display:block">Resumo</label>
         <textarea id="cvReviewSummary" rows="4" style="width:100%;padding:8px 10px;border:1px solid var(--color-border-default);border-radius:6px;background:var(--color-surface-tertiary);color:var(--color-text-primary);font-size:13px;resize:vertical;margin-bottom:12px">${escapeHtml(cv.summary)}</textarea>
@@ -443,10 +455,11 @@ async function saveReviewCV(id) {
       if (resultadosEl) sfExp.resultados = resultadosEl.value.trim();
     }
 
+    const jobTitle = document.getElementById('cvReviewJobTitle')?.value.trim();
     const saveR = await fetch(`${API}/api/jobs/${id}/cv-cache`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cv })
+      body: JSON.stringify({ cv, job_title: jobTitle })
     });
     const saveData = await saveR.json();
     if (saveData.success) {
