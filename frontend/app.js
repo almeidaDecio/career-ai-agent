@@ -100,6 +100,10 @@ function cardHTML(j) {
   let importTag = '';
   if (j.import_status === 'sem_dados') importTag = '<span class="card-time-tag warning">sem dados</span>';
   else if (j.import_status === 'repetida') importTag = '<span class="card-time-tag overdue">repetida</span>';
+  let sourceTag = '';
+  if (j.job_source === 'linkedin') sourceTag = '<span class="card-time-tag">LinkedIn</span>';
+  else if (j.job_source === 'glassdoor') sourceTag = '<span class="card-time-tag">Glassdoor</span>';
+  const cvPending = _pendingCVJobId === j.id || (_cvGenerating && j.adjusted_score == null);
   return `
     <div class="card" draggable="true" data-id="${j.id}" onclick="openDetail(${j.id})">
       <button class="card-delete" onclick="event.stopPropagation();confirmDelete(${j.id})" title="Excluir">
@@ -111,8 +115,10 @@ function cardHTML(j) {
           ${company ? `<div class="card-company">${title}</div>` : ''}
           <div class="card-meta">
             ${dateBR ? `<span class="card-date">${dateBR}</span>` : ''}
+            ${sourceTag}
             ${importTag}
             ${timeTag}
+            ${cvPending ? '<span class="card-cv-loading"><span class="spinner spinner--xs"></span> Gerando CV...</span>' : ''}
           </div>
         </div>
         ${score !== null ? `
@@ -199,26 +205,38 @@ document.getElementById('btnFormatarCV').addEventListener('click', async () => {
 // Importar do LinkedIn (triagem)
 let _triagemJobId = null; // null = modo Nova Vaga normal; número = completando vaga importada
 
-document.getElementById('btnImportarLinkedIn').addEventListener('click', async () => {
-  const btn = document.getElementById('btnImportarLinkedIn');
+// Importação de vagas externas (LinkedIn, Glassdoor) — função genérica
+// reaproveitada pelos botões de cada fonte, já que a lógica de
+// loading/erro/sucesso é idêntica, só muda a fonte e o texto exibido.
+async function importarVagas(source, btnId, nomeAmigavel) {
+  const btn = document.getElementById(btnId);
   btn.disabled = true;
-  const originalText = btn.textContent;
-  btn.textContent = 'Buscando no LinkedIn... (pode levar até 4 min)';
+  const originalHTML = btn.innerHTML;
+  btn.innerHTML = `<span class="spinner spinner--sm"></span> Buscando no ${nomeAmigavel}...`;
   try {
-    const r = await fetch(`${API}/api/jobs/import-batch`, { method: 'POST' });
+    const r = await fetch(`${API}/api/jobs/import-batch/${source}`, { method: 'POST' });
     const result = await r.json();
     if (result.success) {
-      const restantes = (result.runs_max || 2) - (result.runs_today || 0);
-      showToast(`${result.imported} vaga(s) nova(s), ${result.repeated} repetida(s) — ${restantes} busca(s) restante(s) hoje`);
+      const restantes = (result.runs_max || 0) - (result.runs_today || 0);
+      const filtradas = result.filtered_out || 0;
+      showToast(`${result.imported} vaga(s) nova(s), ${result.repeated} repetida(s), ${filtradas} descartada(s) por baixa relevância — ${restantes} busca(s) restante(s) hoje`);
       loadJobs();
     } else {
       showError('Erro ao importar', result.error || 'Não foi possível importar as vagas.');
     }
   } catch (e) {
-    showError('Erro de conexão', 'Não foi possível conectar ao servidor.', `POST /api/jobs/import-batch — ${e.message}`);
+    showError('Erro de conexão', 'Não foi possível conectar ao servidor.', `POST /api/jobs/import-batch/${source} — ${e.message}`);
   }
   btn.disabled = false;
-  btn.textContent = originalText;
+  btn.innerHTML = originalHTML;
+}
+
+document.getElementById('btnImportarLinkedIn').addEventListener('click', () => {
+  importarVagas('linkedin', 'btnImportarLinkedIn', 'LinkedIn');
+});
+
+document.getElementById('btnImportarGlassdoor').addEventListener('click', () => {
+  importarVagas('glassdoor', 'btnImportarGlassdoor', 'Glassdoor');
 });
 
 function openTriagemModal(job) {
@@ -469,7 +487,7 @@ async function openReviewCV(id) {
         <input id="cvReviewJobTitle" type="text" value="${escapeHtml(job.job_title || '')}" style="width:100%;padding:8px 10px;border:1px solid var(--color-border-default);border-radius:6px;background:var(--color-surface-tertiary);color:var(--color-text-primary);font-size:13px;margin-bottom:12px" />
 
         <label style="font-size:11px;color:var(--color-text-secondary);margin-bottom:4px;display:block">Resumo</label>
-        <textarea id="cvReviewSummary" rows="4" style="width:100%;padding:8px 10px;border:1px solid var(--color-border-default);border-radius:6px;background:var(--color-surface-tertiary);color:var(--color-text-primary);font-size:13px;resize:vertical;margin-bottom:12px">${escapeHtml(cv.summary)}</textarea>
+        <textarea id="cvReviewSummary" rows="4" style="width:100%;padding:8px 10px;border:1px solid var(--color-border-default);border-radius:6px;background:var(--color-surface-tertiary);color:var(--color-text-primary);font-size:13px;resize:vertical;margin-bottom:12px"></textarea>
 
         <label style="font-size:11px;color:var(--color-text-secondary);margin-bottom:4px;display:block">Skills (uma por linha)</label>
         <textarea id="cvReviewSkills" rows="6" style="width:100%;padding:8px 10px;border:1px solid var(--color-border-default);border-radius:6px;background:var(--color-surface-tertiary);color:var(--color-text-primary);font-size:13px;resize:vertical;margin-bottom:12px">${cv.skills_ordered.map(escapeHtml).join('\n')}</textarea>
@@ -488,6 +506,8 @@ async function openReviewCV(id) {
         </div>
       </div>
     `;
+    document.getElementById('cvReviewSummary').value = cv.summary || '';
+    document.getElementById('cvReviewSkills').value = cv.skills_ordered.map(s => s).join('\n');
   } catch (e) {
     console.error('openReviewCV error:', e);
     showToast('Erro ao carregar CV para revisão.');
@@ -706,7 +726,7 @@ async function openDetail(id) {
         </div>
         <div class="match-bg-fill" id="adjScoreFill" style="width:${job.adjusted_score || 0}%; background:${job.adjusted_score >= 80 ? 'var(--color-success)' : job.adjusted_score >= 50 ? 'var(--color-warning)' : 'var(--color-error)'};"></div>
         <div class="info-card-content">
-          <span class="info-card-label">Match entre vaga e CV ajustado</span>
+          <span class="info-card-label">Match entre vaga e CV ajustado <span class="info-tip" title="Recalculado depois dos ajustes&#10;feitos pela IA para a vaga">ⓘ</span></span>
           <span class="info-card-value match-value" id="adjScoreValue" style="color:${job.adjusted_score >= 80 ? 'var(--color-success)' : job.adjusted_score >= 50 ? 'var(--color-warning)' : 'var(--color-error)'}">${job.adjusted_score != null ? job.adjusted_score + '%' : '—'}</span>
         </div>
       </div>
@@ -763,6 +783,7 @@ async function openDetail(id) {
         </div>
       </div>
 
+      ${(job.status || 'triagem') === 'entrevista' ? `
       <div class="info-card">
         <div class="info-card-icon">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1.24h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.1a16 16 0 0 0 6 6l.86-.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.58 16z"/></svg>
@@ -776,6 +797,7 @@ async function openDetail(id) {
           </select>
         </div>
       </div>
+      ` : ''}
 
 
 

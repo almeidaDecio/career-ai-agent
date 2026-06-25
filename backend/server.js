@@ -61,20 +61,40 @@ app.get('/api/jobs/:id', (req, res) => {
 
 // Caminhos fixos do scraper de LinkedIn (dentro da pasta do projeto)
 const LINKEDIN_JOBS_DIR = path.join(__dirname, '..', 'linkedin-jobs');
-const LINKEDIN_JOBS_PATH = path.join(LINKEDIN_JOBS_DIR, 'jobs_new.json');
-const LINKEDIN_SCRIPT_PATH = path.join(LINKEDIN_JOBS_DIR, 'linkedin_jobs_designer.py');
-const LINKEDIN_RUNS_PATH = path.join(LINKEDIN_JOBS_DIR, 'execucoes.json');
-const LINKEDIN_MAX_RUNS_PER_DAY = 2;
-const LINKEDIN_SCRIPT_TIMEOUT_MS = 5 * 60 * 1000; // 5 min (script tem deadline interno de 4 min)
+const GLASSDOOR_JOBS_DIR = path.join(__dirname, '..', 'glassdoor-emails', 'glassdoor-jobs');
+
+// Configuração por fonte de importação. Cada fonte tem seu próprio
+// script, pasta de saída, controle de execuções diárias e limite —
+// mas compartilham a mesma rota e lógica de dedup/inserção.
+const IMPORT_SOURCES = {
+  linkedin: {
+    jobsDir: LINKEDIN_JOBS_DIR,
+    jobsPath: path.join(LINKEDIN_JOBS_DIR, 'jobs_new.json'),
+    scriptPath: path.join(LINKEDIN_JOBS_DIR, 'linkedin_jobs_designer.py'),
+    runsPath: path.join(LINKEDIN_JOBS_DIR, 'execucoes.json'),
+    maxRunsPerDay: 2,
+    envVar: 'LINKEDIN_OUTPUT_DIR',
+    timeoutMs: 5 * 60 * 1000 // 5 min (script tem deadline interno de 4 min)
+  },
+  glassdoor: {
+    jobsDir: GLASSDOOR_JOBS_DIR,
+    jobsPath: path.join(GLASSDOOR_JOBS_DIR, 'jobs_new.json'),
+    scriptPath: path.join(path.dirname(GLASSDOOR_JOBS_DIR), 'glassdoor_email_reader.py'),
+    runsPath: path.join(GLASSDOOR_JOBS_DIR, 'execucoes.json'),
+    maxRunsPerDay: 4, // lê e-mail, não bate direto no site — limite mais folgado
+    envVar: 'GLASSDOOR_OUTPUT_DIR',
+    timeoutMs: 3 * 60 * 1000 // 3 min (Gmail API é mais rápida que scraping)
+  }
+};
 
 function hojeISO() {
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
-function lerExecucoesHoje() {
+function lerExecucoesHoje(runsPath) {
   try {
-    const data = JSON.parse(fs.readFileSync(LINKEDIN_RUNS_PATH, 'utf8'));
+    const data = JSON.parse(fs.readFileSync(runsPath, 'utf8'));
     if (data.date !== hojeISO()) return 0; // virou o dia, zera contagem
     return data.count || 0;
   } catch {
@@ -82,66 +102,82 @@ function lerExecucoesHoje() {
   }
 }
 
-function registrarExecucao() {
-  const count = lerExecucoesHoje() + 1;
-  if (!fs.existsSync(LINKEDIN_JOBS_DIR)) fs.mkdirSync(LINKEDIN_JOBS_DIR, { recursive: true });
-  fs.writeFileSync(LINKEDIN_RUNS_PATH, JSON.stringify({ date: hojeISO(), count }), 'utf8');
+function registrarExecucao(runsPath, jobsDir) {
+  const count = lerExecucoesHoje(runsPath) + 1;
+  if (!fs.existsSync(jobsDir)) fs.mkdirSync(jobsDir, { recursive: true });
+  fs.writeFileSync(runsPath, JSON.stringify({ date: hojeISO(), count }), 'utf8');
   return count;
 }
 
-// Importar vagas em lote do scraper de LinkedIn (triagem)
-// Roda o script Python (que busca vagas reais no LinkedIn), espera terminar,
-// lê o jobs_new.json gerado e cria um card por vaga. Limitado a
-// LINKEDIN_MAX_RUNS_PER_DAY execuções por dia para evitar chamar atenção
-// do LinkedIn com buscas repetidas do mesmo IP.
-// Vagas com linkedin_job_id já visto antes entram marcadas como "repetida",
-// em vez de serem ignoradas — fica visível pro usuário decidir o que fazer.
-app.post('/api/jobs/import-batch', (req, res) => {
-  const jaExecutou = lerExecucoesHoje();
-  if (jaExecutou >= LINKEDIN_MAX_RUNS_PER_DAY) {
+// Importar vagas em lote de uma fonte externa (LinkedIn ou Glassdoor).
+// Roda o script Python correspondente (que busca vagas reais), espera
+// terminar, lê o jobs_new.json gerado e cria um card por vaga. Cada
+// fonte tem seu próprio limite diário de execuções, para evitar abuso
+// da API/scraping de origem.
+// Vagas com mesmo job_source + ID já visto antes entram marcadas como
+// "repetida", em vez de serem ignoradas — fica visível pro usuário
+// decidir o que fazer.
+app.post('/api/jobs/import-batch/:source', (req, res) => {
+  const sourceName = req.params.source;
+  const cfg = IMPORT_SOURCES[sourceName];
+
+  if (!cfg) {
+    return res.status(400).json({ error: `Fonte desconhecida: ${sourceName}. Use 'linkedin' ou 'glassdoor'.` });
+  }
+
+  const jaExecutou = lerExecucoesHoje(cfg.runsPath);
+  if (jaExecutou >= cfg.maxRunsPerDay) {
     return res.status(429).json({
-      error: `Limite de ${LINKEDIN_MAX_RUNS_PER_DAY} buscas por dia atingido. Tente novamente amanhã.`,
+      error: `Limite de ${cfg.maxRunsPerDay} buscas por dia atingido para ${sourceName}. Tente novamente amanhã.`,
       runs_today: jaExecutou
     });
   }
 
-  if (!fs.existsSync(LINKEDIN_SCRIPT_PATH)) {
+  if (!fs.existsSync(cfg.scriptPath)) {
     return res.status(404).json({
-      error: `Script não encontrado: ${LINKEDIN_SCRIPT_PATH}. Coloque o linkedin_jobs_designer.py dentro da pasta linkedin-jobs.`
+      error: `Script não encontrado: ${cfg.scriptPath}.`
     });
   }
 
-  execFile('python', [LINKEDIN_SCRIPT_PATH], {
-    timeout: LINKEDIN_SCRIPT_TIMEOUT_MS,
-    env: { ...process.env, LINKEDIN_OUTPUT_DIR: LINKEDIN_JOBS_DIR }
+  execFile('python', [cfg.scriptPath], {
+    timeout: cfg.timeoutMs,
+    env: { ...process.env, [cfg.envVar]: cfg.jobsDir, PYTHONIOENCODING: 'utf-8' }
   }, (err, stdout, stderr) => {
-    const runsHoje = registrarExecucao();
+    const runsHoje = registrarExecucao(cfg.runsPath, cfg.jobsDir);
 
     if (err) {
-      console.error('import-batch: erro ao rodar script Python:', err.message, stderr);
+      console.error(`import-batch/${sourceName}: erro ao rodar script Python:`, err.message, stderr);
       return res.status(500).json({
-        error: `Falha ao rodar o scraper: ${err.message}`,
+        error: `Falha ao rodar o script de ${sourceName}: ${err.message}`,
         runs_today: runsHoje
       });
     }
 
     try {
-      if (!fs.existsSync(LINKEDIN_JOBS_PATH)) {
+      if (!fs.existsSync(cfg.jobsPath)) {
         return res.status(404).json({
           error: 'Script rodou mas jobs_new.json não foi encontrado.',
           runs_today: runsHoje
         });
       }
 
-      const raw = fs.readFileSync(LINKEDIN_JOBS_PATH, 'utf8');
+      const raw = fs.readFileSync(cfg.jobsPath, 'utf8');
       const scrapedJobs = JSON.parse(raw);
 
       if (!Array.isArray(scrapedJobs)) {
         return res.status(400).json({ error: 'jobs_new.json não contém uma lista de vagas válida', runs_today: runsHoje });
       }
 
+      // Corte de qualidade: só vagas com heuristic_score >= MIN_HEURISTIC_SCORE
+      // chegam na triagem. Vagas de baixa relevância (área errada, junior,
+      // etc.) são descartadas aqui mesmo, sem nunca virar card — o
+      // heuristic_score só tem valor se for de fato usado como filtro.
+      const MIN_HEURISTIC_SCORE = 3;
+      const belowThreshold = scrapedJobs.filter(j => (j.heuristic_score ?? 0) < MIN_HEURISTIC_SCORE).length;
+      const qualifyingJobs = scrapedJobs.filter(j => (j.heuristic_score ?? 0) >= MIN_HEURISTIC_SCORE);
+
       const existingIds = new Set(
-        db.prepare('SELECT linkedin_job_id FROM vagas WHERE linkedin_job_id IS NOT NULL').all()
+        db.prepare('SELECT linkedin_job_id FROM vagas WHERE linkedin_job_id IS NOT NULL AND job_source = ?').all(sourceName)
           .map(r => r.linkedin_job_id)
       );
 
@@ -149,10 +185,10 @@ app.post('/api/jobs/import-batch', (req, res) => {
       let repeated = 0;
 
       const insertStmt = db.prepare(`INSERT INTO vagas
-        (job_title, company, location, linkedin_url, linkedin_job_id, import_status, status)
-        VALUES (?, ?, ?, ?, ?, ?, 'triagem')`);
+        (job_title, company, location, linkedin_url, linkedin_job_id, job_source, import_status, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'triagem')`);
 
-      for (const job of scrapedJobs) {
+      for (const job of qualifyingJobs) {
         const isRepeated = existingIds.has(job.id);
         insertStmt.run(
           job.title || null,
@@ -160,6 +196,7 @@ app.post('/api/jobs/import-batch', (req, res) => {
           job.location || null,
           job.url || null,
           job.id || null,
+          sourceName,
           isRepeated ? 'repetida' : 'sem_dados'
         );
         if (isRepeated) repeated++; else imported++;
@@ -168,10 +205,11 @@ app.post('/api/jobs/import-batch', (req, res) => {
 
       res.json({
         success: true, imported, repeated, total: scrapedJobs.length,
-        runs_today: runsHoje, runs_max: LINKEDIN_MAX_RUNS_PER_DAY
+        filtered_out: belowThreshold,
+        runs_today: runsHoje, runs_max: cfg.maxRunsPerDay
       });
     } catch (e) {
-      console.error('import-batch error:', e);
+      console.error(`import-batch/${sourceName} error:`, e);
       res.status(500).json({ error: e.message, runs_today: runsHoje });
     }
   });
@@ -857,6 +895,10 @@ try { db.exec("ALTER TABLE vagas ADD COLUMN requisitos TEXT"); } catch {}
 try { db.exec("ALTER TABLE vagas ADD COLUMN linkedin_url TEXT"); } catch {}
 try { db.exec("ALTER TABLE vagas ADD COLUMN linkedin_job_id TEXT"); } catch {}
 try { db.exec("ALTER TABLE vagas ADD COLUMN import_status TEXT"); } catch {}
+// Origem da vaga importada ('linkedin' ou 'glassdoor') — usado para
+// mostrar a tag certa no card e para escopar a dedup por fonte (um
+// mesmo ID numérico de fontes diferentes não deve colidir entre si)
+try { db.exec("ALTER TABLE vagas ADD COLUMN job_source TEXT"); } catch {}
 
 // Tabela de anexos
 db.exec(`

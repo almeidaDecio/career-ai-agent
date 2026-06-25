@@ -26,6 +26,7 @@
       </div>
       <button class="btn btn--secondary" id="btnImportarCV">Importar CV</button>
       <button class="btn btn--secondary" id="btnImportarLinkedIn">Importar do LinkedIn</button>
+      <button class="btn btn--secondary" id="btnImportarGlassdoor">Importar do Glassdoor</button>
       <button class="btn btn--primary" id="btnNovaVaga">Nova Vaga</button>
     </div>
   </header>
@@ -102,7 +103,7 @@
         <input type="text" id="empresaNome" placeholder="Ex: Stone, Nubank, VTEX..." style="margin-bottom:12px;width:100%;padding:8px 10px;border:1px solid var(--color-border-default);border-radius:var(--radius-md);background:var(--color-surface-tertiary);color:var(--color-text-primary);font-family:var(--font-family-primary);font-size:13px;outline:none;box-sizing:border-box">
         <label for="jobTitleInput">Título da vaga</label>
         <input type="text" id="jobTitleInput" placeholder="Product Designer, Senior UX Designer..." style="margin-bottom:12px;width:100%;padding:8px 10px;border:1px solid var(--color-border-default);border-radius:var(--radius-md);background:var(--color-surface-tertiary);color:var(--color-text-primary);font-family:var(--font-family-primary);font-size:13px;outline:none;box-sizing:border-box">
-        <label for="empresaContext">Contexto da Empresa <span style="color:var(--color-text-secondary);font-weight:400;font-size:12px">(não será analisado pelo Ollama)</span></label>
+        <label for="empresaContext">Contexto da Empresa <span style="color:var(--color-text-secondary);font-weight:400;font-size:12px">(esse texto é só pra sua referência — não interfere no cálculo de match)</span></label>
         <textarea id="empresaContext" rows="4" placeholder="Cole aqui o texto sobre a empresa (cultura, valores, descrição do time...)" style="margin-bottom:16px"></textarea>
         <label for="requisitosVaga">Requisitos da Vaga</label>
         <textarea id="requisitosVaga" rows="10" placeholder="Cole aqui os requisitos, responsabilidades e skills da vaga..."></textarea>
@@ -201,6 +202,6 @@
     <div class="side-panel-body" id="detailBody"></div>
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=2"></script>
 </body>
 </html>

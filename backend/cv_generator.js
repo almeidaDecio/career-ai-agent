@@ -83,6 +83,35 @@ function removeRedundantBullets(bullets, threshold = 0.4) {
   }
   return result;
 }
+
+// Remove paráfrases de métricas fixas (ex: "Conduzi entrevistas..." sem "15+")
+function removeFixedParaphrases(bullets) {
+  return bullets.filter(b => {
+    if (/(?:entrevistas?\s+com\s+usu[aá]rios)/i.test(b) && !/(?:15\+|quinze)/i.test(b)) return false;
+    return true;
+  });
+}
+
+// Remove bullets que compartilham o mesmo grupo de conceito
+const CONCEPT_GROUPS = [
+  ['figma', 'prototip', 'interfac', 'mockup', 'wirefram', 'fidelidade'],
+  ['flux', 'jornada'],
+];
+function removeConceptDuplicates(bullets) {
+  const result = [];
+  const usedGroups = new Set();
+  for (const b of bullets) {
+    const lower = b.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const matchedGroups = CONCEPT_GROUPS
+      .map((group, i) => group.some(k => lower.includes(k)) ? i : -1)
+      .filter(i => i !== -1);
+    if (matchedGroups.length === 0 || matchedGroups.some(g => !usedGroups.has(g))) {
+      matchedGroups.forEach(g => usedGroups.add(g));
+      result.push(b);
+    }
+  }
+  return result;
+}
 // ─────────────────────────────────────────────────────────────────────
 
 // ── Título dinâmico do cabeçalho — baseado no job_title da vaga ────────
@@ -186,7 +215,7 @@ function loadBaseCV() {
 
 function callOllama(prompt) {
   return new Promise((resolve, reject) => {
-    const data = JSON.stringify({ model: OLLAMA_MODEL, prompt, stream: false, format: 'json', options: { temperature: 0 } });
+    const data = JSON.stringify({ model: OLLAMA_MODEL, prompt, stream: false, format: 'json', options: { temperature: 0.4 } });
     const req = http.request(`${OLLAMA_HOST}/api/generate`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }
     }, res => {
@@ -290,7 +319,7 @@ ${cv.summary}
 [EXPERIÊNCIA SOFTFOCUS ORIGINAL]
 ${softfocusText}
 [REGRAS DE ESCRITA PARA ATS — CRÍTICO]
-1. COMPRIMENTO DO RESUMO: 2 a 3 parágrafos. Mencione a trajetória de mais de 30 anos iniciada no design gráfico, a transição para Product Design, e destaque precisão visual, usabilidade e negócios.
+1. COMPRIMENTO DO RESUMO: Mínimo 3 parágrafos, máximo 5. Cada parágrafo com 2 a 4 frases e ao menos 60 palavras no total. INCORPORE o máximo do resumo original — ele tem 3 parágrafos ricos; reaproveite frases e ideias dele em vez de resumir. Mencione a trajetória de mais de 30 anos iniciada no design gráfico, a transição para Product Design, e destaque precisão visual, usabilidade e negócios — mas NÃO transforme o resumo num checklist seco: ele deve fluir como um texto contínuo.
 2. NÃO use adjetivos genéricos de autopromoção: "alta performance", "fora da curva", "acima da média", "excepcional", "diferenciado", "referência", "visionário", "completo", "multifuncional", "proativo", "resiliente", "focado em resultados". Prefira evidência concreta.
 3. NÃO use frases de intenção vazia: "Busco novos desafios", "em busca de oportunidades", "apaixonado por...", "focado em crescimento".
 4. NÃO use "Responsável por", "apoio em", "atuo com", "participação em". Use verbos fortes de entrega: implementei, reduzi, aumentei, otimizei, estruturei, liderei, automatizei, entreguei, desenvolvi, projetei, conduzi, colaborei, documentei.
@@ -299,6 +328,7 @@ ${softfocusText}
 7. Mantenha exatamente de 6 a 8 bullets na Softfocus.
 7.1. CADA BULLET DEVE SER DISTINTO — não repita a mesma conquista, ferramenta ou responsabilidade com palavras diferentes. Se um bullet já menciona prototipagem de alta fidelidade, o próximo não deve falar de prototipagem novamente. Cada bullet cobre um resultado, ferramenta ou responsabilidade único.
 8. Mantenha as datas e dados quantitativos intactos.
+8.1. NÃO repita no resumo informações quantitativas que já aparecem no campo softfocus_resultados (como "5 novos clientes", "Santander", "Banco do Brasil"). O resumo deve focar na trajetória do candidato, não nos números de uma experiência específica.
 9. REGRA OBRIGATÓRIA — RESULTADOS QUANTITATIVOS DA SOFTFOCUS:
    Os bullets abaixo DEVEM aparecer nos softfocus_entregas_ajustadas
    EXATAMENTE como estão escritos. Não resuma, não parafraseie,
@@ -347,6 +377,16 @@ ${structuralTermsRule}
   if (ollamaResult) {
     if (ollamaResult.resumo_ajustado) {
       finalSummary = ollamaResult.resumo_ajustado;
+      // Fallback: se o Ollama devolveu resumo muito curto, usa o original
+      const paragrafos = finalSummary.split(/\n\s*\n/).filter(Boolean).length;
+      const palavras = finalSummary.split(/\s+/).filter(Boolean).length;
+      if (paragrafos < 3 || palavras < 60) {
+        finalSummary = base.summary;
+      }
+      // Remove nomes de clientes específicos do resumo (evita duplicar com resultados)
+      finalSummary = finalSummary.replace(/, incluindo Santander e Banco do Brasil/i, '');
+      finalSummary = finalSummary.replace(/[,\s]*Santander e Banco do Brasil[,\s]*/i, '');
+      finalSummary = finalSummary.replace(/\bincluindo Santander\b.*?(?:\.|$)/i, 'no setor financeiro.');
     }
 
     const sfIdx = finalExperience.findIndex(findSoftfocus);
@@ -381,8 +421,8 @@ ${structuralTermsRule}
     const jobText = JSON.stringify(job).toLowerCase();
     const needsDiscovery = jobText.includes('discovery');
     const needsDelivery = jobText.includes('delivery');
-    if (ollamaResult?.resumo_ajustado) {
-      const resumoLower = ollamaResult.resumo_ajustado.toLowerCase();
+    if (needsDiscovery || needsDelivery) {
+      const resumoLower = finalSummary.toLowerCase();
       const missingDiscovery = needsDiscovery && !resumoLower.includes('discovery');
       const missingDelivery = needsDelivery && !resumoLower.includes('delivery');
       if (missingDiscovery || missingDelivery) {
@@ -390,14 +430,10 @@ ${structuralTermsRule}
           missingDiscovery ? 'Discovery' : '',
           missingDelivery ? 'Delivery' : ''
         ].filter(Boolean).join(' e ');
-        const firstBreak = ollamaResult.resumo_ajustado.indexOf('\n');
-        const insertPoint = firstBreak !== -1 ? firstBreak : ollamaResult.resumo_ajustado.length;
+        const firstBreak = finalSummary.indexOf('\n');
+        const insertPoint = firstBreak !== -1 ? firstBreak : finalSummary.length;
         const injection = ` Com atuação de ponta a ponta entre ${missing}, equilibra estratégia, execução e qualidade na entrega de produtos digitais.`;
-        ollamaResult.resumo_ajustado =
-          ollamaResult.resumo_ajustado.slice(0, insertPoint) +
-          injection +
-          ollamaResult.resumo_ajustado.slice(insertPoint);
-        finalSummary = ollamaResult.resumo_ajustado;
+        finalSummary = finalSummary.slice(0, insertPoint) + injection + finalSummary.slice(insertPoint);
       }
     }
   }
@@ -423,13 +459,28 @@ ${structuralTermsRule}
       })
       .filter(Boolean)
       .filter(b => b.length > 10)
-      .filter(b => !isDuplicateOfFixed(b));
+      .filter(b => !isDuplicateOfFixed(b))
+      .filter(b => removeFixedParaphrases([b]).length > 0);
 
     // Remove bullets redundantes (≥40% de sobreposição de palavras significativas)
     ollamaResult.softfocus_entregas_ajustadas = removeRedundantBullets(
       ollamaResult.softfocus_entregas_ajustadas,
       0.4
     );
+
+    // Remove conceitos duplicados — só entre bullets NÃO fixos
+    const dynamicBullets = ollamaResult.softfocus_entregas_ajustadas
+      .filter(b => !isDuplicateOfFixed(b));
+    const deduped = removeConceptDuplicates(dynamicBullets);
+    const fixed = ollamaResult.softfocus_entregas_ajustadas
+      .filter(b => isDuplicateOfFixed(b));
+    ollamaResult.softfocus_entregas_ajustadas = [...fixed, ...deduped];
+
+    // Propagar de volta pro objeto de experiência
+    const _sfIdx = finalExperience.findIndex(findSoftfocus);
+    if (_sfIdx !== -1) {
+      finalExperience[_sfIdx].highlights = ollamaResult.softfocus_entregas_ajustadas;
+    }
   }
 
   const dict = loadDict();
@@ -502,7 +553,7 @@ function generateHTML(cv, ollamaResult) {
 
   let html = template
     .replace('{{header_title}}', cv.header_title || cv.current_title || 'Product Designer')
-    .replace('{{resumo_ajustado}}', ollamaResult.resumo_ajustado || cv.summary)
+    .replace('{{resumo_ajustado}}', cv.summary)
     .replace('{{skills_list}}', skillsHTML)
     .replace('{{softfocus_periodo}}', ollamaResult.softfocus_periodo || '')
     .replace('{{softfocus_cargo}}', ollamaResult.softfocus_cargo || 'Product Designer')

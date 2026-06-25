@@ -792,7 +792,7 @@ def main():
     new_content = header + "\n\n" + "\n\n".join(vagas_md) + rest
     VAGAS_FILE.write_text(new_content, encoding="utf-8")
 
-    print(f"✅ {len(enriched)} vaga(s) coletada(s) — {now}")
+    print(f"[OK] {len(enriched)} vaga(s) coletada(s) - {now}")
 
 
 if __name__ == "__main__":
