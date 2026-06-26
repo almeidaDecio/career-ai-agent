@@ -13,7 +13,7 @@ function loadDict() {
 
 const CV_PATH = path.join(__dirname, '..', 'sample_cv.json');
 const OLLAMA_HOST = 'http://127.0.0.1:11434';
-const OLLAMA_MODEL = 'job-analyzer';
+const OLLAMA_MODEL = 'llama3.2:3b';
 
 function replaceEngineering(text) {
   return text
@@ -164,21 +164,6 @@ function pickHeaderTitle(job, candidateTitles) {
 }
 // ─────────────────────────────────────────────────────────────────────
 
-// Detecta termos estruturantes na vaga e gera instrução adicional para o prompt
-function detectStructuralTerms(job) {
-  const jobText = JSON.stringify(job).toLowerCase();
-  const terms = [];
-  if (jobText.includes('discovery')) terms.push('Discovery');
-  if (jobText.includes('delivery')) terms.push('Delivery');
-  if (terms.length === 0) return '';
-  const termsList = terms.join(' e ');
-  return `
-8. TERMOS ESTRUTURANTES DETECTADOS NA VAGA: A vaga menciona explicitamente "${termsList}".
-   Esses termos DEVEM aparecer como eixos estruturantes:
-   - No Resumo Profissional: mencionar que o candidato atua "de ponta a ponta entre ${termsList}" ou equivalente natural.
-   - Nos bullets da Softfocus: ao menos 1 bullet deve contextualizar a atuação em ${termsList} de forma orgânica.
-   - NÃO usar os termos de forma isolada ou como keyword stuffing — sempre com contexto de ação.`;
-}
 
 const SYN_PATH = path.join(__dirname, '..', 'sinonimos_pt_en.json');
 let synonyms = null;
@@ -217,7 +202,8 @@ function callOllama(prompt) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify({ model: OLLAMA_MODEL, prompt, stream: false, format: 'json', options: { temperature: 0.4 } });
     const req = http.request(`${OLLAMA_HOST}/api/generate`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      timeout: 300000
     }, res => {
       let body = '';
       res.on('data', c => body += c);
@@ -227,6 +213,7 @@ function callOllama(prompt) {
       });
     });
     req.on('error', reject);
+    req.on('timeout', () => { req.destroy(); reject(new Error('Timeout Ollama')); });
     req.write(data);
     req.end();
   });
@@ -308,56 +295,227 @@ Entregas originais:
 - Integrei ferramentas de IA ao processo de design.
 ` : 'N/A';
 
-  const structuralTermsRule = detectStructuralTerms(job);
+  const prompt = `Você é um editor técnico de currículos especializado em Product Design, UX, UI e produtos digitais B2B.
 
-  const prompt = `Você é um especialista em Recrutamento, Talent Acquisition e redator sênior de currículos focado em tecnologia.
-Sua tarefa é reescrever APENAS duas seções do currículo do candidato (o "Resumo Profissional" e a experiência na "Softfocus") para otimizá-las para a vaga fornecida. O restante do currículo não deve ser alterado.
-[DESCRITIVO DA VAGA]
-${JSON.stringify(job, null, 2)}
-[RESUMO PROFISSIONAL ORIGINAL]
-${cv.summary}
-[EXPERIÊNCIA SOFTFOCUS ORIGINAL]
-${softfocusText}
-[REGRAS DE ESCRITA PARA ATS — CRÍTICO]
-1. COMPRIMENTO DO RESUMO: Mínimo 3 parágrafos, máximo 5. Cada parágrafo com 2 a 4 frases e ao menos 60 palavras no total. INCORPORE o máximo do resumo original — ele tem 3 parágrafos ricos; reaproveite frases e ideias dele em vez de resumir. Mencione a trajetória de mais de 30 anos iniciada no design gráfico, a transição para Product Design, e destaque precisão visual, usabilidade e negócios — mas NÃO transforme o resumo num checklist seco: ele deve fluir como um texto contínuo.
-2. NÃO use adjetivos genéricos de autopromoção: "alta performance", "fora da curva", "acima da média", "excepcional", "diferenciado", "referência", "visionário", "completo", "multifuncional", "proativo", "resiliente", "focado em resultados". Prefira evidência concreta.
-3. NÃO use frases de intenção vazia: "Busco novos desafios", "em busca de oportunidades", "apaixonado por...", "focado em crescimento".
-4. NÃO use "Responsável por", "apoio em", "atuo com", "participação em". Use verbos fortes de entrega: implementei, reduzi, aumentei, otimizei, estruturei, liderei, automatizei, entreguei, desenvolvi, projetei, conduzi, colaborei, documentei.
-5. Estrutura obrigatória para bullets: verbo forte + resultado + ferramenta + contexto. Ex: "Desenvolvi protótipos de alta fidelidade no Figma que antecipavam decisões e reduziam retrabalho em sprint."
-6. PARALELISMO OBRIGATÓRIO NA SOFTFOCUS: Inicie TODOS os bullets com verbos no passado (ex: "Desenvolvi...", "Conduzi...", "Estruturei...", "Colaborei..."). Nunca use substantivos de ação como "Desenvolvimento..." ou verbos no infinitivo.
-7. Mantenha exatamente de 6 a 8 bullets na Softfocus.
-7.1. CADA BULLET DEVE SER DISTINTO — não repita a mesma conquista, ferramenta ou responsabilidade com palavras diferentes. Se um bullet já menciona prototipagem de alta fidelidade, o próximo não deve falar de prototipagem novamente. Cada bullet cobre um resultado, ferramenta ou responsabilidade único.
-8. Mantenha as datas e dados quantitativos intactos.
-8.1. NÃO repita no resumo informações quantitativas que já aparecem no campo softfocus_resultados (como "5 novos clientes", "Santander", "Banco do Brasil"). O resumo deve focar na trajetória do candidato, não nos números de uma experiência específica.
-9. REGRA OBRIGATÓRIA — RESULTADOS QUANTITATIVOS DA SOFTFOCUS:
-   Os bullets abaixo DEVEM aparecer nos softfocus_entregas_ajustadas
-   EXATAMENTE como estão escritos. Não resuma, não parafraseie,
-   não substitua números por palavras, não use "significativo"
-   no lugar de "10x", não escreva "dois" no lugar de "2".
-   Copie-os literalmente:
+Sua tarefa NÃO é criar um currículo novo.
 
-    • Mais de 50 novas telas entregues para evolução da plataforma no Figma
-    • 15+ entrevistas com usuários conduzidas para novas funcionalidades e refinamento de fluxos existentes
+Sua tarefa é adaptar o resumo profissional e os bullets dinâmicos da experiência Softfocus utilizando exclusivamente informações presentes no CV base, priorizando aquelas mais aderentes aos requisitos da vaga.
 
-    Use exatamente: "50" e "15+".
-   NÃO inclua esses bullets nos softfocus_entregas_ajustadas — eles serão adicionados automaticamente.
-   NÃO inicie nenhum bullet com •, -, – ou *. Retorne apenas o texto limpo em cada item do array.
-${structuralTermsRule}
-10. A saída DEVE ser estritamente no formato JSON abaixo, sem qualquer texto introdutório ou explicativo:
+Você pode reorganizar, condensar, ajustar a redação e aproximar a linguagem da vaga.
+
+Você NÃO pode inventar experiências, ferramentas, projetos, resultados, métricas, competências ou qualquer informação que não exista no CV base.
+
+---
+
+### Elementos fixos da experiência Softfocus
+
+A experiência Softfocus possui conteúdos fixos que são inseridos automaticamente pelo sistema e não devem ser gerados pela IA.
+
+Bullets fixos:
+
+* Mais de 50 novas telas entregues para evolução da plataforma no Figma.
+* 15+ entrevistas com usuários conduzidas para novas funcionalidades e refinamento de fluxos existentes.
+
+Também existe um bloco fixo de resultados:
+
+> O trabalho contribuiu diretamente para a conquista de 5 novos clientes, incluindo Santander e Banco do Brasil, além de viabilizar um crescimento de 10 vezes na volumetria processada pelos clientes.
+
+Esses conteúdos servem apenas como contexto para a geração.
+
+Eles NÃO devem ser repetidos no resumo nem nos bullets dinâmicos.
+
+---
+
+### 🔴 Proibição específica — bloco fixo de resultados
+
+Este texto está PROIBIDO no resumo profissional:
+
+> O trabalho contribuiu diretamente para a conquista de 5 novos clientes, incluindo Santander e Banco do Brasil, além de viabilizar um crescimento de 10 vezes na volumetria processada pelos clientes.
+
+Ele já aparece no campo "softfocus_resultados" do JSON de saída. Se for inserido no resumo, o resumo ficará duplicado.
+
+Nunca copie esta frase inteira, nem partes dela (Santander, Banco do Brasil, 5 clientes, 10x volumetria), para o resumo.
+
+---
+
+### Escrita do resumo profissional
+
+Escreva o resumo como se o candidato estivesse respondendo, durante uma entrevista, à pergunta:
+
+> **"Fale um pouco sobre sua experiência profissional."**
+
+O resumo deve ser escrito integralmente em **primeira pessoa do singular**.
+
+Utilize uma linguagem profissional, natural e objetiva.
+
+O texto deve parecer escrito pelo próprio candidato, e não por um recrutador ou por uma inteligência artificial.
+
+Nunca alterne entre primeira e terceira pessoa.
+
+Utilize verbos naturais como:
+
+* Tenho experiência...
+* Desenvolvo...
+* Conduzo...
+* Crio...
+* Estruturo...
+* Colaboro...
+* Documento...
+* Projeto...
+* Valido...
+* Utilizo...
+* Simplifico...
+* Transformo...
+
+Não utilizar construções como:
+
+* Atua em...
+* Possui experiência...
+* Tem experiência...
+* O profissional...
+* O candidato...
+* Especialista em...
+* Com atuação em...
+
+---
+
+### Estrutura obrigatória do resumo
+
+Gerar exatamente **2 parágrafos**.
+
+Cada parágrafo deve conter entre **2 e 3 frases**.
+
+**Primeiro parágrafo**
+
+Apresentar:
+
+* tempo de experiência;
+* evolução da carreira (design gráfico → Product Design);
+* principais áreas de atuação.
+
+**Segundo parágrafo**
+
+Apresentar:
+
+* forma de trabalhar;
+* competências relacionadas à vaga que realmente existam no CV;
+* colaboração com produto, desenvolvimento e negócio;
+* contexto dos produtos desenvolvidos.
+
+O segundo parágrafo deve complementar o primeiro, sem repetir informações.
+
+---
+
+### Linguagem
+
+Priorizar fatos verificáveis.
+
+Escrever de forma simples, clara e objetiva.
+
+Evitar exageros, marketing pessoal e frases genéricas.
+
+Não utilizar expressões como:
+
+* Busco novos desafios.
+* Sou apaixonado por...
+* Tenho grande interesse em...
+* Minha trajetória demonstra...
+* Sou o candidato ideal...
+* Alta performance.
+* Profissional diferenciado.
+* Soluções transformadoras.
+* Resultados excepcionais.
+
+---
+
+### Uso das palavras-chave da vaga
+
+Utilizar termos presentes na vaga apenas quando houver evidências correspondentes no CV base.
+
+Nunca inserir palavras apenas para aumentar aderência ao ATS.
+
+As palavras-chave devem aparecer naturalmente dentro das frases.
+
+Exemplo inadequado:
+
+> Tenho experiência em Discovery, Delivery, UX Research, Figma, Design System e IA.
+
+Exemplo adequado:
+
+> Conduzo discovery, pesquisas com usuários e prototipação em Figma para apoiar decisões de produto e reduzir incertezas durante o desenvolvimento.
+
+---
+
+### Regras para os bullets dinâmicos da Softfocus
+
+Gerar apenas os bullets dinâmicos.
+
+Não gerar os bullets fixos.
+
+Não repetir:
+
+* Mais de 50 novas telas.
+* 15+ entrevistas com usuários.
+* Santander.
+* Banco do Brasil.
+* 5 novos clientes.
+* Crescimento de 10 vezes na volumetria.
+
+Gerar entre **4 e 6 bullets**.
+
+Todos os bullets devem ser escritos no passado.
+
+Cada bullet deve seguir esta estrutura:
+
+**verbo + ação + contexto + finalidade ou impacto**
+
+Exemplos:
+
+* Estruturei fluxos completos de produto para apoiar processos de análise fiscal.
+* Desenvolvi protótipos de alta fidelidade no Figma para validar soluções antes do desenvolvimento.
+* Colaborei com Product Managers, desenvolvedores e QA durante todo o ciclo de evolução do produto.
+
+Cada bullet deve demonstrar aderência a pelo menos um requisito da vaga.
+
+Não repetir a mesma ideia em bullets diferentes.
+
+---
+
+### Validação final
+
+Antes de gerar o JSON, verificar internamente:
+
+* O resumo está totalmente em primeira pessoa?
+* O resumo possui exatamente dois parágrafos?
+* O resumo parece uma apresentação natural do próprio candidato?
+* O resumo utiliza apenas informações existentes no CV base?
+* O resumo evita frases motivacionais e clichês?
+* Os bullets estão escritos no passado?
+* Os bullets não repetem os conteúdos fixos da Softfocus?
+* O resumo não contém a frase "O trabalho contribuiu diretamente para a conquista de 5 novos clientes" nem partes dela?
+* Nenhuma informação foi inventada?
+* O JSON está válido?
+
+Se qualquer resposta for negativa, reescreva antes de retornar o resultado.
+
+---
+
+### Formato de saída
+
+Retorne APENAS o JSON abaixo, sem texto adicional:
+
 {
-  "resumo_ajustado": "Texto...",
+  "resumo_ajustado": "Parágrafo 1...\\n\\nParágrafo 2...",
   "softfocus_cargo": "Product Designer",
   "softfocus_periodo": "jul/2021 – fev/2026",
-  "softfocus_resultados": "O trabalho...",
+  "softfocus_resultados": "O trabalho contribuiu diretamente para a conquista de 5 novos clientes, incluindo Santander e Banco do Brasil, além de viabilizar um crescimento de 10 vezes na volumetria processada pelos clientes.",
   "softfocus_entregas_ajustadas": [
     "bullet 1...",
     "bullet 2...",
     "bullet 3...",
     "bullet 4...",
     "bullet 5...",
-    "bullet 6...",
-    "bullet 7...",
-    "bullet 8..."
+    "bullet 6..."
   ]
 }`;
 
@@ -378,16 +536,20 @@ ${structuralTermsRule}
     if (ollamaResult.resumo_ajustado) {
       finalSummary = ollamaResult.resumo_ajustado;
       // Fallback: se o Ollama devolveu resumo muito curto, usa o original
-      const paragrafos = finalSummary.split(/\n\s*\n/).filter(Boolean).length;
       const palavras = finalSummary.split(/\s+/).filter(Boolean).length;
-      if (paragrafos < 3 || palavras < 60) {
+      if (palavras < 50) {
         finalSummary = base.summary;
       }
-      // Remove nomes de clientes específicos do resumo (evita duplicar com resultados)
-      finalSummary = finalSummary.replace(/, incluindo Santander e Banco do Brasil/i, '');
-      finalSummary = finalSummary.replace(/[,\s]*Santander e Banco do Brasil[,\s]*/i, '');
-      finalSummary = finalSummary.replace(/\bincluindo Santander\b.*?(?:\.|$)/i, 'no setor financeiro.');
     }
+
+    // Remove bloco de resultados do resumo (evita duplicar com campo softfocus_resultados)
+    finalSummary = finalSummary.replace(/, incluindo Santander e Banco do Brasil/i, '');
+    finalSummary = finalSummary.replace(/[,\s]*Santander e Banco do Brasil[,\s]*/i, '');
+    finalSummary = finalSummary.replace(/\bincluindo Santander\b.*?(?:\.|$)/i, 'no setor financeiro.');
+    finalSummary = finalSummary.replace(/(?:contribui[çc][ãa]o|contribuiu)[^.]*5 novos clientes[^.]*\./gi, '');
+    finalSummary = finalSummary.replace(/\b5 novos clientes\b.*?(?:\.|,|$)/i, '');
+    finalSummary = finalSummary.replace(/[Oo] trabalho contribuiu diretamente[^.]*5 novos clientes[^.]*\./gi, '');
+    finalSummary = finalSummary.replace(/[Oo] trabalho contribuiu[^.]*volumetria processada[^.]*\./gi, '');
 
     const sfIdx = finalExperience.findIndex(findSoftfocus);
     if (sfIdx !== -1) {
@@ -417,26 +579,46 @@ ${structuralTermsRule}
       }
     }
 
-    // Garantir Discovery/Delivery no resumo se a vaga os exige
+    // Validação leve de aderência — não modifica o texto, apenas sinaliza
     const jobText = JSON.stringify(job).toLowerCase();
-    const needsDiscovery = jobText.includes('discovery');
-    const needsDelivery = jobText.includes('delivery');
-    if (needsDiscovery || needsDelivery) {
-      const resumoLower = finalSummary.toLowerCase();
-      const missingDiscovery = needsDiscovery && !resumoLower.includes('discovery');
-      const missingDelivery = needsDelivery && !resumoLower.includes('delivery');
-      if (missingDiscovery || missingDelivery) {
-        const missing = [
-          missingDiscovery ? 'Discovery' : '',
-          missingDelivery ? 'Delivery' : ''
-        ].filter(Boolean).join(' e ');
-        const firstBreak = finalSummary.indexOf('\n');
-        const insertPoint = firstBreak !== -1 ? firstBreak : finalSummary.length;
-        const injection = ` Com atuação de ponta a ponta entre ${missing}, equilibra estratégia, execução e qualidade na entrega de produtos digitais.`;
-        finalSummary = finalSummary.slice(0, insertPoint) + injection + finalSummary.slice(insertPoint);
+    const cvText = JSON.stringify(cv).toLowerCase();
+    const resumoLower = finalSummary.toLowerCase();
+    const conceptChecks = [
+      { name: 'discovery', keywords: ['discovery', 'descoberta'] },
+      { name: 'delivery', keywords: ['delivery', 'entrega contínua'] },
+      { name: 'figma', keywords: ['figma'] },
+      { name: 'prototipação', keywords: ['prototip', 'prototyping'] },
+      { name: 'ux research', keywords: ['ux research', 'pesquisa com usuários'] },
+      { name: 'testes de usabilidade', keywords: ['testes de usabilidade', 'usability testing'] },
+      { name: 'entrevistas com usuários', keywords: ['entrevistas com usuários', 'entrevistas com usuários reais'] },
+      { name: 'design system', keywords: ['design system'] },
+      { name: 'user flows', keywords: ['user flows', 'fluxos de produto'] },
+      { name: 'b2b', keywords: ['b2b', 'saas'] },
+      { name: 'setor financeiro', keywords: ['financeiro', 'santander'] },
+      { name: 'ia aplicada ao design', keywords: ['ia', 'inteligência artificial'] },
+    ];
+    const fixedElements = ['50 novas telas', '15+ entrevistas', '5 novos clientes', 'santander', 'banco do brasil', '10 vezes', '10x'];
+    const repeteFixos = fixedElements.some(f => resumoLower.includes(f));
+    if (repeteFixos) {
+      console.log('[CV Generator] Aderência: resumo repete elementos fixos que deveriam estar apenas na seção de resultados');
+    }
+    for (const c of conceptChecks) {
+      const naVaga = c.keywords.some(k => jobText.includes(k));
+      const noCV = c.keywords.some(k => cvText.includes(k));
+      const noResumo = c.keywords.some(k => resumoLower.includes(k));
+      if (naVaga && noCV && !noResumo) {
+        console.log(`[CV Generator] Aderência: vaga pede "${c.name}" (presente no CV) mas o resumo gerado não o menciona`);
       }
     }
   }
+
+  // Sanitização extra: garante que mesmo sem Ollama (falha total) o resumo não leva métricas fixas
+  finalSummary = finalSummary.replace(/, incluindo Santander e Banco do Brasil/i, '');
+  finalSummary = finalSummary.replace(/[,\s]*Santander e Banco do Brasil[,\s]*/i, '');
+  finalSummary = finalSummary.replace(/(?:contribui[çc][ãa]o|contribuiu)[^.]*5 novos clientes[^.]*\./gi, '');
+  finalSummary = finalSummary.replace(/\b5 novos clientes\b.*?(?:\.|,|$)/i, '');
+  finalSummary = finalSummary.replace(/[Oo] trabalho contribuiu diretamente[^.]*5 novos clientes[^.]*\./gi, '');
+  finalSummary = finalSummary.replace(/[Oo] trabalho contribuiu[^.]*volumetria processada[^.]*\./gi, '');
 
   // Pós-processamento: limpar padrões fracos que o Ollama eventualmente ainda gere
   if (ollamaResult?.softfocus_entregas_ajustadas) {
@@ -453,6 +635,13 @@ ${structuralTermsRule}
         t = t.replace(/\bAtuava\b/i, 'Atuei');
         t = t.replace(/^Documentação de\b/i, 'Contribuí na documentação de');
         t = t.replace(/\be contribuição para (a|o|as|os)\b/i, ' e na');
+        t = t.replace(/^Estrutura[cç][ãa]o de\b/i, 'Estruturei');
+        t = t.replace(/^Estruturada?\b/i, 'Estruturei');
+        t = t.replace(/^Desenvolvimento de\b/i, 'Desenvolvi');
+        t = t.replace(/^Desenvolvido\b/i, 'Desenvolvi');
+        t = t.replace(/^Condu[cç][ãa]o de\b/i, 'Conduzi');
+        t = t.replace(/^Cria[cç][ãa]o de\b/i, 'Criei');
+        t = t.replace(/^Colabora[cç][ãa]o (com|em)\b/i, 'Colaborei $1');
         // Remover adjetivos genéricos isolados
         t = t.replace(/\b(alta performance|fora da curva|acima da m[ée]dia|excepcional|diferenciado|refer[êe]ncia|vision[áa]rio|completo|multifuncional|proativo|resiliente|focado em resultados?|apaixonado)\b/gi, '').replace(/\s{2,}/g, ' ').trim();
         return t;
