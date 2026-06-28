@@ -28,9 +28,24 @@ function escapeHtml(text) {
   return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
+const PROTECTED_RESULTADOS = 'O trabalho contribuiu diretamente para a conquista de 5 novos clientes, incluindo Santander e Banco do Brasil, além de viabilizar um crescimento de 10 vezes na volumetria processada pelos clientes.';
+
 const FIXED_METRICS = [
   'Mais de 50 novas telas entregues para evolução da plataforma no Figma',
   '15+ entrevistas com usuários conduzidas para novas funcionalidades e refinamento de fluxos existentes',
+];
+
+const BLOCKED_DYNAMIC_TERMS = [
+  'Confluence', 'Azure DevOps'
+];
+
+const WEAK_TONE_PATTERNS = [
+  /\bRespons[áa]vel por\b/gi,
+  /\bAtua[cç][ãa]o em\b/gi,
+  /\bParticipa[cç][ãa]o em\b/gi,
+  /^Desenvolvimento de\b/gi,
+  /^Condu[cç][ãa]o de\b/gi,
+  /^Cria[cç][ãa]o de\b/gi
 ];
 
 // Checks por regex — detectam variações de escrita do Ollama
@@ -46,14 +61,9 @@ function isDuplicateOfFixed(bullet) {
 
 // Garante que todas as métricas fixas estão presentes — reinjeta só as ausentes
 function ensureFixedMetrics(entregas) {
-  let result = Array.isArray(entregas) ? [...entregas] : [];
-  const missingIndexes = [];
-  METRICS_CHECKS.forEach((check, i) => {
-    const found = result.some(b => check(b));
-    if (!found) missingIndexes.push(i);
-  });
-  const toInject = missingIndexes.map(i => FIXED_METRICS[i]);
-  return [...toInject, ...result];
+  const dynamic = Array.isArray(entregas) ? entregas.filter(Boolean).filter(b => !isDuplicateOfFixed(b)) : [];
+  // V10: as duas métricas protegidas entram sempre no topo, com redação exata.
+  return [...FIXED_METRICS, ...dynamic];
 }
 
 // ── Detecta redundância entre bullets (word overlap ≥ threshold) ────
@@ -94,8 +104,9 @@ function removeFixedParaphrases(bullets) {
 
 // Remove bullets que compartilham o mesmo grupo de conceito
 const CONCEPT_GROUPS = [
+  // V10: só evita duplicidade pesada de UI/prototipação. Não agrupa 'fluxo/jornada' porque
+  // pode apagar evidências distintas como testes, user flows e IA no fluxo de design.
   ['figma', 'prototip', 'interfac', 'mockup', 'wirefram', 'fidelidade'],
-  ['flux', 'jornada'],
 ];
 function removeConceptDuplicates(bullets) {
   const result = [];
@@ -252,6 +263,130 @@ function extractJson(raw) {
   throw new Error('Não foi possível extrair JSON do Ollama');
 }
 
+
+function normalizeForCompare(text) {
+  return String(text || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9 ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isBlockedTerm(skill) {
+  const s = normalizeForCompare(skill);
+  return BLOCKED_DYNAMIC_TERMS.some(t => s.includes(normalizeForCompare(t)) || normalizeForCompare(t).includes(s));
+}
+
+function jobText(job) {
+  return normalizeForCompare(JSON.stringify(job || {}));
+}
+
+function rankSkillsForJob(skills, job) {
+  const text = jobText(job);
+  const seen = new Set();
+  const base = (skills || []).filter(Boolean).filter(s => !isBlockedTerm(s));
+  const weighted = base.map((skill, idx) => {
+    const n = normalizeForCompare(skill);
+    let score = text.includes(n) ? 100 : 0;
+    for (const w of n.split(' ').filter(x => x.length > 3)) {
+      if (text.includes(w)) score += 10;
+    }
+    // Competências centrais do perfil têm prioridade mesmo quando a vaga usa termos próximos.
+    if (/figma|ux research|pesquisa|discovery|design system|user flows|jornada|prototip|testes de usabilidade|entrevistas|b2b|financeiro|ia/.test(n)) score += 8;
+    return { skill, score, idx };
+  }).sort((a,b) => b.score - a.score || a.idx - b.idx);
+  return weighted.map(x => x.skill).filter(skill => {
+    const key = normalizeSkill(skill);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function sanitizeSummaryText(summary, fallback) {
+  let t = String(summary || '').trim();
+  if (!t) t = fallback;
+  t = t.replace(/, incluindo Santander e Banco do Brasil/i, '');
+  t = t.replace(/[,\s]*Santander e Banco do Brasil[,\s]*/i, '');
+  t = t.replace(/\bincluindo Santander\b.*?(?:\.|$)/i, 'no setor financeiro.');
+  t = t.replace(/(?:contribui[çc][ãa]o|contribuiu)[^.]*5 novos clientes[^.]*\./gi, '');
+  t = t.replace(/\b5 novos clientes\b.*?(?:\.|,|$)/i, '');
+  t = t.replace(/[Oo] trabalho contribuiu diretamente[^.]*5 novos clientes[^.]*\./gi, '');
+  t = t.replace(/[Oo] trabalho contribuiu[^.]*volumetria processada[^.]*\./gi, '');
+  t = t.replace(/\s{2,}/g, ' ').replace(/\n\s+/g, '\n').trim();
+  return replaceEngineering(t);
+}
+
+function sanitizeDynamicBullet(bullet) {
+  if (!bullet) return '';
+  let t = String(bullet).trim();
+  // Correções de erros comuns observados nas saídas da V9.
+  t = t.replace(/\bValidrei\b/gi, 'Validei');
+  t = t.replace(/\bEstruturai\b/gi, 'Estruturei');
+  t = t.replace(/\bDesenvolvi soluções transformadoras\b/gi, 'Desenvolvi soluções');
+  // Primeira pessoa implícita: converter construções impessoais.
+  t = t.replace(/\bRespons[áa]vel por\b/i, 'Estruturei');
+  t = t.replace(/^Atua[cç][ãa]o em\b/i, 'Atuei em');
+  t = t.replace(/^Participa[cç][ãa]o em\b/i, 'Contribuí em');
+  t = t.replace(/^Desenvolvimento de\b/i, 'Desenvolvi');
+  t = t.replace(/^Condu[cç][ãa]o de\b/i, 'Conduzi');
+  t = t.replace(/^Cria[cç][ãa]o de\b/i, 'Criei');
+  t = t.replace(/^Documenta[cç][ãa]o de\b/i, 'Documentei');
+  t = t.replace(/\be contribui[cç][ãa]o para (a|o|as|os)\b/i, 'e contribuí para $1');
+  t = t.replace(/^Estrutura[cç][ãa]o de\b/i, 'Estruturei');
+  t = t.replace(/^Colabora[cç][ãa]o com\b/i, 'Colaborei com');
+  t = t.replace(/\b(alta performance|fora da curva|acima da m[ée]dia|excepcional|diferenciado|vision[áa]rio|apaixonado|sou o candidato ideal)\b/gi, '');
+  t = t.replace(/\s{2,}/g, ' ').trim();
+  return replaceEngineering(t);
+}
+
+function validateDynamicBullets(bullets) {
+  let arr = Array.isArray(bullets) ? bullets : [];
+  arr = arr.map(sanitizeDynamicBullet)
+    .filter(Boolean)
+    .filter(b => b.length > 10)
+    .filter(b => !isDuplicateOfFixed(b))
+    .filter(b => removeFixedParaphrases([b]).length > 0)
+    .filter(b => !/(5 novos clientes|santander|banco do brasil|crescimento de 10|10 vezes|10x na volumetria)/i.test(b))
+    .filter(b => !isBlockedTerm(b));
+  arr = removeRedundantBullets(arr, 0.42);
+  arr = removeConceptDuplicates(arr);
+  return ensureFixedMetrics(arr);
+}
+
+function applyApprovedStaticExperiences(experience) {
+  return (experience || []).map(exp => {
+    if (findSoftfocus(exp)) return exp;
+    const company = normalizeForCompare(exp.company);
+    if (company.includes('bmk')) {
+      return {
+        ...exp,
+        highlights: [],
+        description: 'Atuação na criação e finalização de documentos de segurança (cheques e boletos), garantindo precisão técnica e conformidade em processos gráficos de alta complexidade. Interface contínua entre TI, PCP e produção para apoiar a eficiência operacional e a redução de falhas ao longo do fluxo produtivo.',
+        skills: ['Documentos de Segurança', 'Otimização de Processos', 'Suporte TI', 'Resolução de Problemas', 'Colaboração Multidisciplinar', 'Eficiência Operacional']
+      };
+    }
+    if (company.includes('editora 3') || company.includes('istoe')) {
+      return {
+        ...exp,
+        highlights: [],
+        description: 'Desenvolvimento de layouts editoriais e ilustrações para publicação semanal de circulação nacional, organizando conteúdos financeiros e econômicos com foco em clareza da informação, hierarquia visual e consistência editorial em ambiente de alta demanda.',
+        skills: ['Hierarquia Visual', 'Organização da Informação', 'Comunicação Visual', 'Design Editorial', 'Produção Jornalística', 'Clareza da Informação']
+      };
+    }
+    if (company.includes('paper express')) {
+      return {
+        ...exp,
+        highlights: [],
+        description: 'Gestão da produção gráfica com foco em planejamento operacional, coordenação de equipes e controle de processos, garantindo qualidade técnica, cumprimento de prazos e eficiência em ambientes de alta demanda.',
+        skills: ['Gestão de Processos', 'Planejamento Operacional', 'Coordenação de Equipes', 'Controle de Prazos', 'Qualidade', 'Eficiência Operacional']
+      };
+    }
+    return exp;
+  });
+}
+
 function generate(cv, job) {
   const { matched, unmatched } = findMatches(cv, job);
   const headerTitle = pickHeaderTitle(job, candidateTitlesFromCV(cv));
@@ -261,7 +396,7 @@ function generate(cv, job) {
     current_title: cv.current_title,
     header_title: headerTitle,
     summary: cv.summary,
-    skills_ordered: [...matched, ...unmatched],
+    skills_ordered: rankSkillsForJob([...matched, ...unmatched], job),
     matched_skills: matched,
     experience: cv.experience,
     education: cv.education,
@@ -282,7 +417,7 @@ async function generateForJob(job) {
   const softfocusExp = cv.experience.find(findSoftfocus);
   const softfocusText = softfocusExp ? `
 Cargo: ${softfocusExp.role} (jul/2021 – fev/2026)
-Resultados: O trabalho contribuiu diretamente para a conquista de 5 novos clientes, incluindo Santander e Banco do Brasil, além de viabilizar um crescimento de 10 vezes na volumetria processada pelos clientes.
+Resultados: ${PROTECTED_RESULTADOS}
 Entregas originais:
 - Entrega de mais de 50 novas telas para evolução da plataforma e otimização da experiência do usuário.
 - Condução de 15+ entrevistas com usuários, apoiando pesquisas para novas funcionalidades e refinamento de fluxos existentes.
@@ -352,7 +487,7 @@ Gerar exatamente 2 parágrafos curtos.
 
 Cada parágrafo deve ter entre 2 e 3 frases.
 
-O resumo deve ser escrito em **primeira pessoa do singular**, utilizando linguagem profissional, natural e objetiva.
+O resumo deve ser escrito em **primeira pessoa implícita**: use verbos como desenvolvo, conduzo, estruturo, crio e colaboro, sem iniciar frases com "Eu". A linguagem deve ser profissional, natural e objetiva.
 
 Não mencionar a vaga, a empresa contratante ou o processo seletivo.
 
@@ -426,7 +561,7 @@ Gerar entre 4 e 6 bullets dinâmicos.
 
 Cada bullet deve seguir esta estrutura:
 
-verbo no passado + ação realizada + contexto/ferramenta + finalidade ou impacto qualitativo
+verbo no passado em primeira pessoa implícita + ação realizada + contexto/ferramenta + finalidade ou impacto qualitativo
 
 Todos os bullets devem estar no passado.
 
@@ -506,7 +641,7 @@ Antes de retornar o JSON, verificar internamente:
 * Não há frases de intenção profissional?
 * Não há adjetivos genéricos?
 * O resumo não repete métricas fixas?
-* Todos os bullets dinâmicos estão no passado?
+* Todos os bullets dinâmicos estão no passado e em primeira pessoa implícita?
 * Nenhum bullet dinâmico repete os bullets fixos?
 * Nenhum bullet dinâmico repete Santander, Banco do Brasil, 5 novos clientes ou crescimento de 10 vezes?
 * Nenhuma competência foi inventada?
@@ -520,7 +655,7 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
   "resumo_ajustado": "Parágrafo 1...\\n\\nParágrafo 2...",
   "softfocus_cargo": "Product Designer",
   "softfocus_periodo": "jul/2021 – fev/2026",
-  "softfocus_resultados": "O trabalho contribuiu diretamente para a conquista de 5 novos clientes, incluindo Santander e Banco do Brasil, além de viabilizar um crescimento de 10 vezes na volumetria processada pelos clientes.",
+  "softfocus_resultados": "${PROTECTED_RESULTADOS}",
   "softfocus_entregas_ajustadas": [
     "bullet 1...",
     "bullet 2...",
@@ -546,7 +681,7 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
 
   if (ollamaResult) {
     if (ollamaResult.resumo_ajustado) {
-      finalSummary = ollamaResult.resumo_ajustado;
+      finalSummary = sanitizeSummaryText(ollamaResult.resumo_ajustado, base.summary);
       // Fallback: se o Ollama devolveu resumo muito curto, usa o original
       const palavras = finalSummary.split(/\s+/).filter(Boolean).length;
       if (palavras < 50) {
@@ -566,11 +701,8 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
     const sfIdx = finalExperience.findIndex(findSoftfocus);
     if (sfIdx !== -1) {
       if (ollamaResult.softfocus_entregas_ajustadas && Array.isArray(ollamaResult.softfocus_entregas_ajustadas)) {
-        // Remove bullets que duplicam métricas fixas, depois reinjeta as ausentes
-        const semDuplicatas = ollamaResult.softfocus_entregas_ajustadas
-          .filter(Boolean)
-          .filter(b => !isDuplicateOfFixed(b));
-        const entregas = ensureFixedMetrics(semDuplicatas);
+        // V10: valida bullets dinâmicos e reinjeta métricas protegidas com redação exata.
+        const entregas = validateDynamicBullets(ollamaResult.softfocus_entregas_ajustadas);
         if (entregas.length) {
           finalExperience[sfIdx].highlights = entregas;
           ollamaResult.softfocus_entregas_ajustadas = entregas;
@@ -578,7 +710,7 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
       }
 
       // Validar softfocus_resultados — garantir que não ficou vazio nem perdeu dados
-      const DEFAULT_RESULTADOS = 'O trabalho contribuiu diretamente para a conquista de 5 novos clientes, incluindo Santander e Banco do Brasil, além de viabilizar um crescimento de 10 vezes na volumetria processada pelos clientes.';
+      const DEFAULT_RESULTADOS = PROTECTED_RESULTADOS;
       if (!ollamaResult.softfocus_resultados || !ollamaResult.softfocus_resultados.trim()) {
         ollamaResult.softfocus_resultados = DEFAULT_RESULTADOS;
       } else {
@@ -696,7 +828,7 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
         .filter(b => !/(5 novos clientes|santander|banco do brasil|crescimento de 10|10 vezes|10x na volumetria)/i.test(b));
     }
     if (!finalExperience[_fallbackSfIdx].resultados) {
-      finalExperience[_fallbackSfIdx].resultados = 'O trabalho contribuiu diretamente para a conquista de 5 novos clientes, incluindo Santander e Banco do Brasil, além de viabilizar um crescimento de 10 vezes na volumetria processada pelos clientes.';
+      finalExperience[_fallbackSfIdx].resultados = PROTECTED_RESULTADOS;
     }
   }
 
@@ -719,14 +851,25 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
     }
   }
 
+  // V10: proteção final de Softfocus e experiências antigas antes de retornar.
+  const sfProtectIdx = finalExperience.findIndex(findSoftfocus);
+  if (sfProtectIdx !== -1) {
+    finalExperience[sfProtectIdx].role = 'Product Designer';
+    finalExperience[sfProtectIdx].period = 'jul/2021 – fev/2026';
+    finalExperience[sfProtectIdx].resultados = PROTECTED_RESULTADOS;
+    finalExperience[sfProtectIdx].highlights = validateDynamicBullets(finalExperience[sfProtectIdx].highlights || []);
+  }
+  const protectedExperience = applyApprovedStaticExperiences(finalExperience);
+  const finalSkillsOrdered = rankSkillsForJob(enrichedSkills, job).filter(s => !isBlockedTerm(s));
+
   return {
     name: base.name,
     current_title: base.current_title,
     header_title: base.header_title,
     summary: finalSummary,
-    skills_ordered: enrichedSkills,
+    skills_ordered: finalSkillsOrdered,
     matched_skills: base.matched_skills,
-    experience: finalExperience,
+    experience: protectedExperience,
     education: base.education,
     languages: base.languages
   };
@@ -734,7 +877,20 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
 
 function generateFromData(cvData, job) {
   const base = generate(cvData, job);
-  return base;
+  const experience = applyApprovedStaticExperiences(base.experience || []);
+  const sfIdx = experience.findIndex(findSoftfocus);
+  if (sfIdx !== -1) {
+    experience[sfIdx].role = 'Product Designer';
+    experience[sfIdx].period = 'jul/2021 – fev/2026';
+    experience[sfIdx].resultados = PROTECTED_RESULTADOS;
+    experience[sfIdx].highlights = validateDynamicBullets(experience[sfIdx].highlights || []);
+  }
+  return {
+    ...base,
+    summary: sanitizeSummaryText(base.summary, cvData.summary || base.summary),
+    skills_ordered: rankSkillsForJob(base.skills_ordered || [], job).filter(s => !isBlockedTerm(s)),
+    experience
+  };
 }
 
 function computeHeaderTitle(cv, job) {
@@ -745,7 +901,13 @@ function capitalizeSkill(s) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-function generateHTML(cv, ollamaResult) {
+function generateHTML(cv, ollamaResult = {}) {
+  ollamaResult = ollamaResult || {};
+  if (!ollamaResult.softfocus_resultados) ollamaResult.softfocus_resultados = PROTECTED_RESULTADOS;
+  if (!Array.isArray(ollamaResult.softfocus_entregas_ajustadas)) {
+    const sf = (cv.experience || []).find(findSoftfocus);
+    ollamaResult.softfocus_entregas_ajustadas = validateDynamicBullets(sf?.highlights || []);
+  }
   cv.skills_ordered = sanitizeSkills([...cv.skills_ordered]);
   const skillsHTML = cv.skills_ordered.map(capitalizeSkill).join(' | ');
 
@@ -774,7 +936,7 @@ function generateHTML(cv, ollamaResult) {
     .replace('{{skills_list}}', skillsHTML)
     .replace('{{softfocus_periodo}}', ollamaResult.softfocus_periodo || '')
     .replace('{{softfocus_cargo}}', ollamaResult.softfocus_cargo || 'Product Designer')
-    .replace('{{softfocus_resultados}}', ollamaResult.softfocus_resultados || '')
+    .replace('{{softfocus_resultados}}', PROTECTED_RESULTADOS)
     .replace('{{softfocus_metrics}}', fixedMetricsHTML)
     .replace('{{softfocus_bullets_dynamic}}', dynamicBulletsHTML);
 
@@ -793,8 +955,11 @@ function generateExternalHTML(cv) {
 
   const esc = escapeHtml;
   const experienciaHTML = (cv.experience || []).map(exp => {
-    const highlights = (exp.highlights || []).filter(Boolean);
+    const isSf = findSoftfocus(exp);
+    const highlights = isSf ? validateDynamicBullets(exp.highlights || []) : (exp.highlights || []).filter(Boolean);
     const skills = (exp.skills || []).filter(Boolean).map(esc).join(' | ');
+    const description = exp.description || exp.domain;
+    const resultBox = isSf ? `<div class="result-box">${esc(PROTECTED_RESULTADOS)}</div>` : '';
     return `
     <div class="job">
       <div class="job-header">
@@ -802,7 +967,8 @@ function generateExternalHTML(cv) {
         ${exp.period ? `<div class="job-period">${esc(exp.period)}</div>` : exp.years ? `<div class="job-period">${exp.years} anos</div>` : ''}
       </div>
       <div class="job-role">${esc(exp.role) || ''}</div>
-      ${exp.domain ? `<p class="job-desc" style="margin-bottom:8px">${esc(exp.domain)}</p>` : ''}
+      ${description && !isSf ? `<p class="job-desc" style="margin-bottom:8px">${esc(description)}</p>` : ''}
+      ${resultBox}
       ${highlights.length ? `<ul class="bullet-list">${highlights.map(h => `<li>${esc(h)}</li>`).join('\n        ')}</ul>` : ''}
       ${skills ? `<div class="job-skills">${skills}</div>` : ''}
     </div>`;

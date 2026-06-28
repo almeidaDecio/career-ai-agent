@@ -1,0 +1,43 @@
+{
+  "version": "10.0",
+  "description": "Perfil mestre do candidato usado apenas pelo AjustaCV para score e validação. Não é exibido diretamente no currículo.",
+  "levels": {
+    "0": "não conhece",
+    "1": "básico",
+    "2": "experiência prática pontual",
+    "3": "experiência prática consistente",
+    "4": "forte/comprovado"
+  },
+  "skills": [
+    { "name": "Inglês", "level": 3, "allowed_in": ["skills"] },
+    { "name": "Confluence", "level": 0, "allowed_in": [] },
+    { "name": "Azure DevOps", "level": 0, "allowed_in": [] },
+    { "name": "HTML", "level": 1, "allowed_in": ["skills_basic"] },
+    { "name": "CSS", "level": 1, "allowed_in": ["skills_basic"] },
+    { "name": "JavaScript", "level": 1, "allowed_in": ["skills_basic"] },
+    { "name": "React", "level": 1, "allowed_in": ["skills_basic"] },
+    { "name": "SQL", "level": 1, "allowed_in": ["skills_basic"] },
+    { "name": "Personas", "level": 3, "allowed_in": ["summary", "skills"] },
+    { "name": "Jornada do Usuário", "level": 4, "allowed_in": ["summary", "skills", "experience"] },
+    { "name": "Workshops", "level": 3, "allowed_in": ["summary", "skills"] },
+    { "name": "Design Sprint", "level": 3, "allowed_in": ["summary", "skills"] },
+    { "name": "NPS", "level": 2, "allowed_in": ["skills"] },
+    { "name": "CSAT", "level": 2, "allowed_in": ["skills"] },
+    { "name": "Figma", "level": 4, "allowed_in": ["summary", "skills", "experience"] },
+    { "name": "Design Systems", "level": 4, "allowed_in": ["summary", "skills", "experience"] },
+    { "name": "UX Research", "level": 4, "allowed_in": ["summary", "skills", "experience"] },
+    { "name": "Product Discovery", "level": 4, "allowed_in": ["summary", "skills", "experience"] },
+    { "name": "Testes de Usabilidade", "level": 4, "allowed_in": ["summary", "skills", "experience"] },
+    { "name": "Entrevistas com Usuários", "level": 4, "allowed_in": ["summary", "skills", "experience"] },
+    { "name": "User Flows", "level": 4, "allowed_in": ["summary", "skills", "experience"] },
+    { "name": "Wireframes", "level": 4, "allowed_in": ["summary", "skills", "experience"] },
+    { "name": "Prototipagem de Alta Fidelidade", "level": 4, "allowed_in": ["summary", "skills", "experience"] },
+    { "name": "IA aplicada ao Design", "level": 4, "allowed_in": ["summary", "skills", "experience"] },
+    { "name": "Metodologias Ágeis", "level": 3, "allowed_in": ["summary", "skills", "experience"] },
+    { "name": "Jira", "level": 3, "allowed_in": ["skills"] },
+    { "name": "Scrum", "level": 3, "allowed_in": ["skills"] },
+    { "name": "Kanban", "level": 3, "allowed_in": ["skills"] },
+    { "name": "B2B SaaS", "level": 4, "allowed_in": ["summary", "skills", "experience"] },
+    { "name": "Segmento Financeiro", "level": 4, "allowed_in": ["summary", "skills", "experience"] }
+  ]
+}

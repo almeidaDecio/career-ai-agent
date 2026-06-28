@@ -69,13 +69,12 @@
       "years": 4.7,
       "domain": "B2B SaaS",
       "highlights": [
-        "5 novos clientes no setor financeiro (Santander, Banco do Brasil) e crescimento de 10x na volumetria processada",
-        "Mais de 50 novas telas para evolução da plataforma no Figma",
-        "15+ entrevistas com usuários para novas funcionalidades e refinamento de fluxos",
-        "Estruturação de 2 fluxos completos de produto: Comprovação Fiscal Analítica e Sensoriamento Remoto",
-        "Condução de testes de usabilidade e entrevistas com usuários reais",
-        "Documentação de user flows e contribuição para a evolução do design system",
-        "Integração de ferramentas de IA ao fluxo de design (ideação, pesquisa, variações)"
+        "Mais de 50 novas telas entregues para evolução da plataforma no Figma",
+        "15+ entrevistas com usuários conduzidas para novas funcionalidades e refinamento de fluxos existentes",
+        "Estruturei 2 fluxos completos de produto: Comprovação Fiscal Analítica e Sensoriamento Remoto",
+        "Conduzi testes de usabilidade com usuários reais para validar funcionalidades e refinar fluxos existentes",
+        "Documentei user flows e contribuí para a evolução do design system",
+        "Integrei ferramentas de IA ao fluxo de design para apoiar ideação, pesquisa e variações"
       ],
       "skills": [
         "Figma",
@@ -85,7 +84,8 @@
         "Discovery",
         "Metodologias Ágeis",
         "IA no Design"
-      ]
+      ],
+      "resultados": "O trabalho contribuiu diretamente para a conquista de 5 novos clientes, incluindo Santander e Banco do Brasil, além de viabilizar um crescimento de 10 vezes na volumetria processada pelos clientes."
     },
     {
       "company": "BMK Indústria Gráfica",
@@ -94,14 +94,16 @@
       "years": 9,
       "domain": "Gráfico / Operacional",
       "highlights": [
-        "Criação e finalização de documentos de segurança de alta complexidade (cheques e boletos)",
-        "Otimização de fluxos de produção gráfica com redução de falhas e ganho de eficiência"
+        "Atuação na criação e finalização de documentos de segurança (cheques e boletos), garantindo precisão técnica e conformidade em processos gráficos de alta complexidade",
+        "Interface contínua entre TI, PCP e produção para apoiar a eficiência operacional e a redução de falhas ao longo do fluxo produtivo"
       ],
       "skills": [
         "Documentos de Segurança",
-        "Pré-impressão",
-        "Resolução de problemas",
-        "Otimização de Processos"
+        "Otimização de Processos",
+        "Suporte TI",
+        "Resolução de Problemas",
+        "Colaboração Multidisciplinar",
+        "Eficiência Operacional"
       ]
     },
     {
@@ -111,15 +113,16 @@
       "years": 0.7,
       "domain": "Editorial",
       "highlights": [
-        "Desenvolvimento de layouts editoriais para publicação semanal de circulação nacional",
-        "Criação de soluções visuais para conteúdos financeiros e econômicos"
+        "Desenvolvimento de layouts editoriais e ilustrações para publicação semanal de circulação nacional, organizando conteúdos financeiros e econômicos com foco em clareza da informação",
+        "Definição de hierarquia visual e consistência editorial em ambiente de alta demanda"
       ],
       "skills": [
-        "Diagramação Editorial",
-        "Ilustração",
-        "Design Gráfico",
-        "Identidade Visual",
-        "Pré-impressão"
+        "Hierarquia Visual",
+        "Organização da Informação",
+        "Comunicação Visual",
+        "Design Editorial",
+        "Produção Jornalística",
+        "Clareza da Informação"
       ]
     },
     {
@@ -129,22 +132,23 @@
       "years": 7,
       "domain": "Gráfico / Produção",
       "highlights": [
-        "Gestão de produção gráfica com planejamento operacional e controle de prazos",
-        "Coordenação de equipes em ambientes de alta demanda"
+        "Gestão da produção gráfica com foco em planejamento operacional, coordenação de equipes e controle de processos",
+        "Garantia de qualidade técnica, cumprimento de prazos e eficiência em ambientes de alta demanda"
       ],
       "skills": [
-        "Gestão de Produção",
-        "Gestão de Equipes",
-        "Design Gráfico",
-        "PCP",
-        "Otimização de Processos"
+        "Gestão de Processos",
+        "Planejamento Operacional",
+        "Coordenação de Equipes",
+        "Controle de Prazos",
+        "Qualidade",
+        "Eficiência Operacional"
       ]
     }
   ],
   "languages": [
     {
       "language": "Inglês",
-      "level": "Básico"
+      "level": "Intermediário"
     }
   ],
   "education": [
