@@ -295,210 +295,222 @@ Entregas originais:
 - Integrei ferramentas de IA ao processo de design.
 ` : 'N/A';
 
-  const prompt = `Você é um editor técnico de currículos especializado em Product Design, UX, UI e produtos digitais B2B.
+  const prompt = `[VAGA]
+${JSON.stringify(job, null, 2)}
+
+[RESUMO ATUAL DO CANDIDATO]
+${cv.summary}
+
+[EXPERIÊNCIA SOFTFOCUS ORIGINAL]
+${softfocusText}
+
+---
+
+### Instrução principal
+
+Você é um editor técnico de currículos especializado em Product Design, UX, UI e produtos digitais B2B.
 
 Sua tarefa NÃO é criar um currículo novo.
 
-Sua tarefa é adaptar o resumo profissional e os bullets dinâmicos da experiência Softfocus utilizando exclusivamente informações presentes no CV base, priorizando aquelas mais aderentes aos requisitos da vaga.
+Sua tarefa é adaptar o resumo profissional e os bullets dinâmicos da experiência Softfocus usando apenas informações já existentes no CV base, priorizando os pontos mais aderentes à vaga.
 
-Você pode reorganizar, condensar, ajustar a redação e aproximar a linguagem da vaga.
+Você pode reorganizar, condensar, ajustar verbos e aproximar a linguagem da vaga.
 
-Você NÃO pode inventar experiências, ferramentas, projetos, resultados, métricas, competências ou qualquer informação que não exista no CV base.
-
----
-
-### Elementos fixos da experiência Softfocus
-
-A experiência Softfocus possui conteúdos fixos que são inseridos automaticamente pelo sistema e não devem ser gerados pela IA.
-
-Bullets fixos:
-
-* Mais de 50 novas telas entregues para evolução da plataforma no Figma.
-* 15+ entrevistas com usuários conduzidas para novas funcionalidades e refinamento de fluxos existentes.
-
-Também existe um bloco fixo de resultados:
-
-> O trabalho contribuiu diretamente para a conquista de 5 novos clientes, incluindo Santander e Banco do Brasil, além de viabilizar um crescimento de 10 vezes na volumetria processada pelos clientes.
-
-Esses conteúdos servem apenas como contexto para a geração.
-
-Eles NÃO devem ser repetidos no resumo nem nos bullets dinâmicos.
+Você não pode inventar experiências, ferramentas, resultados, métricas, cargos, empresas, clientes, projetos ou competências.
 
 ---
 
-### 🔴 Proibição específica — bloco fixo de resultados
+### Importante: métricas e resultados fixos
 
-Este texto está PROIBIDO no resumo profissional:
+A experiência Softfocus possui elementos fixos que não devem ser gerados pela IA.
 
-> O trabalho contribuiu diretamente para a conquista de 5 novos clientes, incluindo Santander e Banco do Brasil, além de viabilizar um crescimento de 10 vezes na volumetria processada pelos clientes.
+Estes dois bullets já são inseridos automaticamente pelo sistema em softfocus_metrics:
 
-Ele já aparece no campo "softfocus_resultados" do JSON de saída. Se for inserido no resumo, o resumo ficará duplicado.
+* "Mais de 50 novas telas entregues para evolução da plataforma no Figma"
+* "15+ entrevistas com usuários conduzidas para novas funcionalidades e refinamento de fluxos existentes"
 
-Nunca copie esta frase inteira, nem partes dela (Santander, Banco do Brasil, 5 clientes, 10x volumetria), para o resumo.
+Além disso, o box de resultados da Softfocus já é inserido separadamente no currículo:
+
+"O trabalho contribuiu diretamente para a conquista de 5 novos clientes, incluindo Santander e Banco do Brasil, além de viabilizar um crescimento de 10 vezes na volumetria processada pelos clientes."
+
+Portanto, a IA NÃO deve repetir nos bullets dinâmicos:
+
+* Mais de 50 novas telas
+* 15+ entrevistas
+* 5 novos clientes
+* Santander
+* Banco do Brasil
+* crescimento de 10 vezes / 10x na volumetria
+
+Essas informações podem ser consideradas como contexto, mas não devem ser reescritas nem duplicadas na saída dinâmica.
 
 ---
 
-### Escrita do resumo profissional
+### Regras para o Resumo Profissional
 
-Escreva o resumo como se o candidato estivesse respondendo, durante uma entrevista, à pergunta:
+Gerar exatamente 2 parágrafos curtos.
 
-> **"Fale um pouco sobre sua experiência profissional."**
+Cada parágrafo deve ter entre 2 e 3 frases.
 
-O resumo deve ser escrito integralmente em **primeira pessoa do singular**.
+O resumo deve ser escrito em **primeira pessoa do singular**, utilizando linguagem profissional, natural e objetiva.
 
-Utilize uma linguagem profissional, natural e objetiva.
+Não mencionar a vaga, a empresa contratante ou o processo seletivo.
 
-O texto deve parecer escrito pelo próprio candidato, e não por um recrutador ou por uma inteligência artificial.
+Não escrever frases de intenção, motivação ou desejo profissional.
 
-Nunca alterne entre primeira e terceira pessoa.
+Evitar frases como:
 
-Utilize verbos naturais como:
+* "Busco novos desafios"
+* "Estou apaixonado por"
+* "Tenho interesse em"
+* "Minha trajetória é relevante para esta oportunidade"
+* "Sou o candidato ideal"
+* "Como se eu estivesse explicando"
 
-* Tenho experiência...
-* Desenvolvo...
-* Conduzo...
-* Crio...
-* Estruturo...
-* Colaboro...
-* Documento...
-* Projeto...
-* Valido...
-* Utilizo...
-* Simplifico...
-* Transformo...
-
-Não utilizar construções como:
-
-* Atua em...
-* Possui experiência...
-* Tem experiência...
-* O profissional...
-* O candidato...
-* Especialista em...
-* Com atuação em...
+O resumo deve apenas apresentar minha trajetória, competências e evidências profissionais.
 
 ---
 
 ### Estrutura obrigatória do resumo
 
-Gerar exatamente **2 parágrafos**.
+Parágrafo 1:
 
-Cada parágrafo deve conter entre **2 e 3 frases**.
+* Cargo/área de atuação
+* Tempo de experiência
+* Transição do design gráfico tradicional para produtos digitais
+* Principais áreas de atuação relacionadas à vaga
 
-**Primeiro parágrafo**
+Parágrafo 2:
 
-Apresentar:
-
-* tempo de experiência;
-* evolução da carreira (design gráfico → Product Design);
-* principais áreas de atuação.
-
-**Segundo parágrafo**
-
-Apresentar:
-
-* forma de trabalhar;
-* competências relacionadas à vaga que realmente existam no CV;
-* colaboração com produto, desenvolvimento e negócio;
-* contexto dos produtos desenvolvidos.
-
-O segundo parágrafo deve complementar o primeiro, sem repetir informações.
+* Forma como desenvolvo meu trabalho em produto
+* Competências aderentes à vaga com evidência no CV
+* Impacto profissional comprovado, sem repetir métricas fixas
+* Ferramentas ou práticas apenas quando existirem no CV base
 
 ---
 
-### Linguagem
+### Regras de estilo
 
-Priorizar fatos verificáveis.
+Usar linguagem natural, objetiva e profissional.
 
-Escrever de forma simples, clara e objetiva.
+Priorizar fatos verificáveis em vez de adjetivos.
 
-Evitar exageros, marketing pessoal e frases genéricas.
+Preferir construções como:
 
-Não utilizar expressões como:
+* "conduzo entrevistas com usuários"
+* "estruturo fluxos de produto"
+* "crio telas e protótipos no Figma"
+* "colaboro com PMs, desenvolvedores e QA"
+* "tenho experiência na evolução de produtos B2B do setor financeiro"
 
-* Busco novos desafios.
-* Sou apaixonado por...
-* Tenho grande interesse em...
-* Minha trajetória demonstra...
-* Sou o candidato ideal...
-* Alta performance.
-* Profissional diferenciado.
-* Soluções transformadoras.
-* Resultados excepcionais.
+Evitar:
 
----
-
-### Uso das palavras-chave da vaga
-
-Utilizar termos presentes na vaga apenas quando houver evidências correspondentes no CV base.
-
-Nunca inserir palavras apenas para aumentar aderência ao ATS.
-
-As palavras-chave devem aparecer naturalmente dentro das frases.
-
-Exemplo inadequado:
-
-> Tenho experiência em Discovery, Delivery, UX Research, Figma, Design System e IA.
-
-Exemplo adequado:
-
-> Conduzo discovery, pesquisas com usuários e prototipação em Figma para apoiar decisões de produto e reduzir incertezas durante o desenvolvimento.
+* "profissional diferenciado"
+* "alta performance"
+* "apaixonado por inovação"
+* "resultados excepcionais"
+* "perfil estratégico e criativo"
+* "soluções transformadoras"
 
 ---
 
-### Regras para os bullets dinâmicos da Softfocus
+### Regras para a experiência Softfocus
 
-Gerar apenas os bullets dinâmicos.
+Reescrever apenas os bullets dinâmicos da experiência Softfocus.
 
-Não gerar os bullets fixos.
+Não gerar os dois bullets fixos de métricas.
 
-Não repetir:
+Não gerar o box de resultados com Santander, Banco do Brasil, 5 novos clientes ou crescimento de 10 vezes.
 
-* Mais de 50 novas telas.
-* 15+ entrevistas com usuários.
-* Santander.
-* Banco do Brasil.
-* 5 novos clientes.
-* Crescimento de 10 vezes na volumetria.
-
-Gerar entre **4 e 6 bullets**.
-
-Todos os bullets devem ser escritos no passado.
+Gerar entre 4 e 6 bullets dinâmicos.
 
 Cada bullet deve seguir esta estrutura:
 
-**verbo + ação + contexto + finalidade ou impacto**
+verbo no passado + ação realizada + contexto/ferramenta + finalidade ou impacto qualitativo
 
-Exemplos:
-
-* Estruturei fluxos completos de produto para apoiar processos de análise fiscal.
-* Desenvolvi protótipos de alta fidelidade no Figma para validar soluções antes do desenvolvimento.
-* Colaborei com Product Managers, desenvolvedores e QA durante todo o ciclo de evolução do produto.
+Todos os bullets devem estar no passado.
 
 Cada bullet deve demonstrar aderência a pelo menos um requisito da vaga.
 
 Não repetir a mesma ideia em bullets diferentes.
 
+Não inventar métricas.
+
+Não alterar números, datas, clientes ou resultados existentes.
+
 ---
 
-### Validação final
+### Conteúdos permitidos para os bullets dinâmicos
 
-Antes de gerar o JSON, verificar internamente:
+A IA pode usar e reescrever apenas evidências como:
 
-* O resumo está totalmente em primeira pessoa?
-* O resumo possui exatamente dois parágrafos?
-* O resumo parece uma apresentação natural do próprio candidato?
-* O resumo utiliza apenas informações existentes no CV base?
-* O resumo evita frases motivacionais e clichês?
-* Os bullets estão escritos no passado?
-* Os bullets não repetem os conteúdos fixos da Softfocus?
-* O resumo não contém a frase "O trabalho contribuiu diretamente para a conquista de 5 novos clientes" nem partes dela?
-* Nenhuma informação foi inventada?
+* Estruturação de 2 fluxos completos de produto
+* Comprovação Fiscal Analítica
+* Sensoriamento Remoto
+* Testes de usabilidade
+* Pesquisas qualitativas
+* Usuários reais
+* Colaboração com PMs, desenvolvedores e QA
+* Sprints ágeis
+* Documentação de user flows
+* Evolução do design system
+* Integração de ferramentas de IA ao fluxo de design
+* Ideação, pesquisa e variações com apoio de IA
+* Prototipação de alta fidelidade no Figma
+* Redução de retrabalho em sprint, quando essa informação existir no CV base
+
+---
+
+### Priorização dos bullets dinâmicos
+
+Ao adaptar os bullets, priorizar evidências relacionadas a:
+
+1. Product Design
+2. Discovery
+3. Validação com usuários
+4. Figma
+5. Prototipação
+6. User flows
+7. Design system
+8. Colaboração com PMs, desenvolvedores e QA
+9. Produtos B2B, sistemas complexos e setor financeiro
+10. IA aplicada ao design
+
+Usar termos da vaga somente quando houver evidência correspondente no CV base.
+
+Se a vaga pedir uma competência que não existe no CV base, não mencionar essa competência.
+
+---
+
+### Exemplo de bom resumo
+
+Tenho mais de 30 anos de experiência em design, com trajetória iniciada no design gráfico tradicional e evolução para produtos digitais. Desenvolvo interfaces, fluxos, protótipos e experiências orientadas à clareza operacional, usabilidade e consistência visual.
+
+Tenho experiência em produtos B2B do setor financeiro, conduzindo discovery, validação com usuários, prototipação em Figma e colaborando com times de produto, desenvolvimento e QA. Contribuo para a evolução de plataformas digitais complexas, conectando necessidades de negócio, viabilidade técnica e experiência do usuário.
+
+---
+
+### Exemplo de texto proibido
+
+"Sou apaixonado por resolver problemas complexos e busco novas oportunidades para aplicar meus conhecimentos. Minha trajetória mostra por que sou ideal para essa oportunidade específica, unindo inovação, alta performance e soluções transformadoras."
+
+---
+
+### Validação antes da resposta
+
+Antes de retornar o JSON, verificar internamente:
+
+* O resumo tem exatamente 2 parágrafos?
+* O resumo está escrito em primeira pessoa?
+* O texto não menciona a vaga ou a empresa?
+* Não há frases de intenção profissional?
+* Não há adjetivos genéricos?
+* O resumo não repete métricas fixas?
+* Todos os bullets dinâmicos estão no passado?
+* Nenhum bullet dinâmico repete os bullets fixos?
+* Nenhum bullet dinâmico repete Santander, Banco do Brasil, 5 novos clientes ou crescimento de 10 vezes?
+* Nenhuma competência foi inventada?
 * O JSON está válido?
-
-Se qualquer resposta for negativa, reescreva antes de retornar o resultado.
-
----
 
 ### Formato de saída
 
@@ -565,18 +577,20 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
         }
       }
 
-      // Validar softfocus_resultados — garantir que os números não foram perdidos
-      if (ollamaResult.softfocus_resultados) {
+      // Validar softfocus_resultados — garantir que não ficou vazio nem perdeu dados
+      const DEFAULT_RESULTADOS = 'O trabalho contribuiu diretamente para a conquista de 5 novos clientes, incluindo Santander e Banco do Brasil, além de viabilizar um crescimento de 10 vezes na volumetria processada pelos clientes.';
+      if (!ollamaResult.softfocus_resultados || !ollamaResult.softfocus_resultados.trim()) {
+        ollamaResult.softfocus_resultados = DEFAULT_RESULTADOS;
+      } else {
         const res = ollamaResult.softfocus_resultados;
         const temNumeros =
           /5 novos|santander|banco do brasil/i.test(res) &&
           /10x|10 vez/i.test(res);
         if (!temNumeros) {
-          ollamaResult.softfocus_resultados =
-            'O trabalho contribuiu diretamente para a conquista de 5 novos clientes, incluindo Santander e Banco do Brasil, além de viabilizar um crescimento de 10 vezes na volumetria processada pelos clientes.';
+          ollamaResult.softfocus_resultados = DEFAULT_RESULTADOS;
         }
-        finalExperience[sfIdx].resultados = ollamaResult.softfocus_resultados;
       }
+      finalExperience[sfIdx].resultados = ollamaResult.softfocus_resultados;
     }
 
     // Validação leve de aderência — não modifica o texto, apenas sinaliza
@@ -649,7 +663,9 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
       .filter(Boolean)
       .filter(b => b.length > 10)
       .filter(b => !isDuplicateOfFixed(b))
-      .filter(b => removeFixedParaphrases([b]).length > 0);
+      .filter(b => removeFixedParaphrases([b]).length > 0)
+      // Remover bullets que contenham texto de resultados fixos
+      .filter(b => !/(5 novos clientes|santander|banco do brasil|crescimento de 10|10 vezes|10x na volumetria)/i.test(b));
 
     // Remove bullets redundantes (≥40% de sobreposição de palavras significativas)
     ollamaResult.softfocus_entregas_ajustadas = removeRedundantBullets(
@@ -669,6 +685,18 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
     const _sfIdx = finalExperience.findIndex(findSoftfocus);
     if (_sfIdx !== -1) {
       finalExperience[_sfIdx].highlights = ollamaResult.softfocus_entregas_ajustadas;
+    }
+  }
+
+  // Sanitização de fallback: garante que mesmo sem Ollama os dados da Softfocus não são perdidos
+  const _fallbackSfIdx = finalExperience.findIndex(findSoftfocus);
+  if (_fallbackSfIdx !== -1) {
+    if (finalExperience[_fallbackSfIdx].highlights) {
+      finalExperience[_fallbackSfIdx].highlights = finalExperience[_fallbackSfIdx].highlights
+        .filter(b => !/(5 novos clientes|santander|banco do brasil|crescimento de 10|10 vezes|10x na volumetria)/i.test(b));
+    }
+    if (!finalExperience[_fallbackSfIdx].resultados) {
+      finalExperience[_fallbackSfIdx].resultados = 'O trabalho contribuiu diretamente para a conquista de 5 novos clientes, incluindo Santander e Banco do Brasil, além de viabilizar um crescimento de 10 vezes na volumetria processada pelos clientes.';
     }
   }
 

@@ -13,7 +13,7 @@ const multer = require('multer');
 const app = express();
 const PORT = 3001;
 const OLLAMA_HOST = 'http://127.0.0.1:11434';
-const OLLAMA_MODEL = 'job-analyzer';
+const OLLAMA_MODEL = 'llama3.2:3b';
 const db = new Database(path.join(__dirname, '..', 'career_agent.db'));
 const CV_PATH = path.join(__dirname, '..', 'sample_cv.json');
 
@@ -43,6 +43,16 @@ app.get('/api/jobs', (req, res) => {
     tools: safeJson(r.tools),
     ats_keywords: safeJson(r.ats_keywords)
   })));
+});
+
+// Status da fila de processamento — colocado ANTES dos routes com :id para evitar conflito
+app.get('/api/jobs/processing', (req, res) => {
+  const statuses = {};
+  for (const [id, st] of processingStatus) {
+    statuses[id] = st;
+  }
+  const queued = processingQueue.map(item => item.jobId);
+  res.json({ processing: [...processingStatus.keys()].map(Number), queued, statuses });
 });
 
 // Pegar uma vaga por ID
@@ -452,11 +462,12 @@ Preencha todos os campos. Se não encontrar, deixe string vazia ou array vazio.`
 function generateCVHTML(cv, job, id) {
   cv.header_title = cvGenerator.computeHeaderTitle(cv, job);
   const sfExp = cv.experience.find(e => e.company.toLowerCase().includes('softfocus'));
+  const DEFAULT_RESULTADOS = 'O trabalho contribuiu diretamente para a conquista de 5 novos clientes, incluindo Santander e Banco do Brasil, além de viabilizar um crescimento de 10 vezes na volumetria processada pelos clientes.';
   const ollamaResult = {
     resumo_ajustado: cv.summary,
     softfocus_cargo: sfExp ? sfExp.role : 'Product Designer',
     softfocus_periodo: sfExp && sfExp.period ? sfExp.period : 'jul/2021 – fev/2026',
-    softfocus_resultados: sfExp && sfExp.resultados ? sfExp.resultados : '',
+    softfocus_resultados: sfExp && sfExp.resultados ? sfExp.resultados : DEFAULT_RESULTADOS,
     softfocus_entregas_ajustadas: sfExp && sfExp.highlights ? sfExp.highlights : []
   };
   cvGenerator.generateHTML(cv, ollamaResult);
@@ -741,16 +752,18 @@ function callOllama(prompt) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify({ model: OLLAMA_MODEL, prompt, stream: false, options: { temperature: 0 } });
     const req = http.request(`${OLLAMA_HOST}/api/generate`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      timeout: 600000
     }, res => {
       let body = '';
       res.on('data', c => body += c);
       res.on('end', () => {
         try { resolve(JSON.parse(body).response); }
-        catch (e) { reject(new Error('Falha ao ler resposta do Ollama')); }
+        catch (e) { const err = new Error('Falha ao ler resposta do Ollama'); err.rawResponse = body.slice(0, 500); reject(err); }
       });
     });
     req.on('error', reject);
+    req.on('timeout', () => { req.destroy(); const e = new Error('Timeout Ollama'); e.rawResponse = 'TIMEOUT'; reject(e); });
     req.write(data);
     req.end();
   });
@@ -762,8 +775,212 @@ function extractJson(raw) {
   cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
   try { return JSON.parse(cleaned); } catch {}
   const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}');
-  if (s !== -1 && e > s) { try { return JSON.parse(cleaned.slice(s, e + 1)); } catch {} }
-  throw new Error('Não foi possível extrair JSON');
+  if (s !== -1 && e > s) {
+    let json = cleaned.slice(s, e + 1);
+    try { return JSON.parse(json); } catch {}
+    // Modelo às vezes gera escapes Unicode inválidos (ex: \u00arios em vez de \u00e1rios)
+    json = json.replace(/\\u([0-9a-fA-F]{0,3})([^0-9a-fA-F])/g, (_, hex, next) => {
+      if (hex.length < 4) return next;
+      return '\\u' + hex + next;
+    }).replace(/\\u([0-9a-fA-F]{0,3})$/g, (_, hex) => '');
+    try { return JSON.parse(json); } catch {}
+  }
+  const err = new Error('Não foi possível extrair JSON');
+  err.rawResponse = raw;
+  throw err;
+}
+
+// ── Fila de processamento assíncrono ─────────────────────────────────────
+// Permite que o frontend feche o modal imediatamente e o processamento
+// rode em background. A fila garante que apenas um job rode por vez (Ollama serial).
+const processingQueue = [];        // fila de { jobId, body }
+let processingActive = false;      // true enquanto um job está sendo processado
+const processingStatus = new Map(); // jobId → { status, error? }
+
+// Recuperar jobs que ficaram presos como 'processing' após restart
+try {
+  const stuck = db.prepare("SELECT id, job_text, requisitos, empresa_context, job_title, company FROM vagas WHERE status = 'processing'").all();
+  for (const s of stuck) {
+    processingQueue.push({
+      jobId: s.id,
+      body: {
+        empresa_nome: s.company,
+        empresa_context: s.empresa_context,
+        requisitos: s.requisitos,
+        job_text: s.job_text,
+        job_title: s.job_title,
+        applied_date: null
+      }
+    });
+  }
+  if (stuck.length > 0) {
+    console.log(`🔄 Recuperando ${stuck.length} job(s) travados do status 'processing'`);
+    setImmediate(() => processNextInQueue());
+  }
+} catch (e) {
+  console.error('Erro ao recuperar jobs travados:', e.message);
+}
+
+async function processNextInQueue() {
+  if (processingActive || processingQueue.length === 0) return;
+  processingActive = true;
+  const { jobId, body } = processingQueue.shift();
+  try {
+    const { empresa_nome, empresa_context, requisitos, job_text, applied_date, job_title } = body;
+    const requisitosText = requisitos || job_text || '';
+
+    // Verificar se o job existe no DB (pode ter sido excluído enquanto estava na fila)
+    const jobRowCheck = db.prepare('SELECT id FROM vagas WHERE id = ?').get(jobId);
+    if (!jobRowCheck) {
+      console.warn(`Job ${jobId} não encontrado no DB, pulando da fila`);
+      processingStatus.set(jobId, { status: 'error', error: 'Job não encontrado no banco' });
+      setTimeout(() => processingStatus.delete(jobId), 5000);
+      processingActive = false;
+      processNextInQueue();
+      return;
+    }
+
+    // ─── Fase 1: Extração + Match ─────────────────────────────────────────
+    const existing = db.prepare('SELECT matching_score, required_skills, job_title, company, seniority, experience_years_min, location, required_skills, nice_to_have_skills, responsibilities, tools, ats_keywords, job_text, empresa_context, requisitos FROM vagas WHERE id = ?').get(jobId);
+    const alreadyExtracted = existing && existing.matching_score !== null && existing.required_skills !== null;
+
+    if (!alreadyExtracted) {
+      const fullText = [empresa_context, requisitosText].filter(Boolean).join('\n\n---\n\n');
+      const extractPrompt = buildExtractPrompt(job_title, empresa_nome, requisitosText);
+      processingStatus.set(jobId, { status: 'extracting' });
+      let v, lastError, lastRaw;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          const raw = await callOllama(extractPrompt);
+          v = extractJson(raw);
+          if (v && typeof v === 'object') break;
+        } catch (err) {
+          lastError = err;
+          lastRaw = err.rawResponse;
+          console.error(`Extraction attempt ${attempt}/3 failed for job ${jobId}: ${err.message}`);
+          if (err.rawResponse) {
+            const logPath = path.join(__dirname, '..', 'data', `ollama_raw_${jobId}_a${attempt}.txt`);
+            fs.writeFileSync(logPath, typeof err.rawResponse === 'string' ? err.rawResponse : String(err.rawResponse), 'utf8');
+            console.error(`Raw response saved to ${logPath}`);
+          }
+          if (attempt < 3) {
+            processingStatus.set(jobId, { status: 'extracting', attempt, error: err.message });
+            await new Promise(r => setTimeout(r, 5000 * attempt));
+          }
+        }
+      }
+      if (!v) throw lastError || new Error('Extração falhou após 3 tentativas');
+      v.job_title = job_title || v.job_title || null;
+      v.required_skills = skillExpander.expand(v.required_skills || [], requisitosText);
+      v.nice_to_have_skills = skillExpander.expand(v.nice_to_have_skills || [], requisitosText);
+      v.tools = skillExpander.expand(v.tools || [], requisitosText);
+      v.ats_keywords = skillExpander.expand(v.ats_keywords || [], requisitosText);
+      const match = matcher.run(v);
+      const matchingScore = match.score !== null ? match.score : 0;
+      db.prepare(`UPDATE vagas SET
+        job_title = ?, company = ?, seniority = ?, experience_years_min = ?, location = ?,
+        required_skills = ?, nice_to_have_skills = ?, responsibilities = ?, tools = ?, ats_keywords = ?,
+        job_text = ?, matching_score = ?, empresa_context = ?, requisitos = ?
+        WHERE id = ?`).run(
+        v.job_title || null, empresa_nome || v.company || null, v.seniority || null,
+        v.experience_years_min || null, v.location || null,
+        JSON.stringify(v.required_skills || []), JSON.stringify(v.nice_to_have_skills || []),
+        JSON.stringify(v.responsibilities || []), JSON.stringify(v.tools || []),
+        JSON.stringify(v.ats_keywords || []),
+        fullText, matchingScore, empresa_context || null, requisitosText,
+        jobId
+      );
+    }
+
+    // ─── Fase 2: Gerar CV automaticamente ─────────────────────────────────
+    processingStatus.set(jobId, { status: 'generating_cv' });
+    try {
+      const cachePath = path.join(__dirname, '..', 'data', `cv_cache_${jobId}.json`);
+      const precisaGerarCV = !fs.existsSync(cachePath) || (() => { try { JSON.parse(fs.readFileSync(cachePath, 'utf8')); return false; } catch { return true; } })();
+      if (precisaGerarCV) {
+        const row = db.prepare('SELECT * FROM vagas WHERE id = ?').get(jobId);
+        const jobText = row.requisitos || row.job_text || '';
+        const job = {
+          job_title: row.job_title || null,
+          required_skills: skillExpander.expand(safeJson(row.required_skills), jobText),
+          nice_to_have_skills: skillExpander.expand(safeJson(row.nice_to_have_skills), jobText),
+          tools: skillExpander.expand(safeJson(row.tools), jobText),
+          ats_keywords: skillExpander.expand(safeJson(row.ats_keywords), jobText)
+        };
+        const cv = await cvGenerator.generateForJob(job);
+        cv.header_title = cvGenerator.computeHeaderTitle(cv, job);
+        const dataDir = path.join(__dirname, '..', 'data');
+        if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+        fs.writeFileSync(cachePath, JSON.stringify(cv, null, 2), 'utf8');
+        db.prepare('UPDATE vagas SET generated_at = ? WHERE id = ?').run(new Date().toISOString(), jobId);
+
+        // Gera o HTML final e recalcula o adjusted_score
+        const sfExp = cv.experience.find(e => e.company.toLowerCase().includes('softfocus'));
+        const ollamaResult = {
+          resumo_ajustado: cv.summary,
+          softfocus_cargo: sfExp ? sfExp.role : 'Product Designer',
+          softfocus_periodo: sfExp && sfExp.period ? sfExp.period : 'jul/2021 – fev/2026',
+          softfocus_resultados: sfExp && sfExp.resultados ? sfExp.resultados : '',
+          softfocus_entregas_ajustadas: sfExp && sfExp.highlights ? sfExp.highlights : []
+        };
+        cvGenerator.generateHTML(cv, ollamaResult);
+        const matchAdj = matcher.runWithCV(cv, job);
+        if (matchAdj.score !== null) {
+          db.prepare('UPDATE vagas SET adjusted_score = ? WHERE id = ?').run(matchAdj.score, jobId);
+        }
+      }
+    } catch (cvErr) {
+      console.error(`CV generation failed for job ${jobId}:`, cvErr.message);
+      // Não propaga o erro — o CV pode ser gerado manualmente depois
+    }
+
+    db.prepare("UPDATE vagas SET status = 'triagem', import_status = NULL WHERE id = ? AND status = 'processing'").run(jobId);
+    processingStatus.set(jobId, { status: 'complete' });
+    setTimeout(() => processingStatus.delete(jobId), 20000);
+  } catch (e) {
+    console.error(`Background processing failed for job ${jobId}:`, e.message);
+    processingStatus.set(jobId, { status: 'error', error: e.message });
+    setTimeout(() => processingStatus.delete(jobId), 20000);
+    // Libera o job pra poder ser reprocessado
+    db.prepare("UPDATE vagas SET status = 'triagem' WHERE id = ? AND status = 'processing'").run(jobId);
+  }
+  processingActive = false;
+  setImmediate(() => processNextInQueue()); // tenta próximo da fila
+}
+
+function buildExtractPrompt(job_title, empresa_nome, requisitosText) {
+  const knownSkills = JSON.stringify(skillExpander.getKnownSkills ? skillExpander.getKnownSkills() : []);
+  return `Você é um extrator especializado em vagas de emprego para Product Design e UX.
+Analise o texto da vaga abaixo e extraia TODAS as informações no formato JSON exato especificado.
+Seja EXAUSTIVO na extração de skills — não omita nenhuma competência mencionada na vaga.
+
+[TEXTO DA VAGA]
+${requisitosText}
+
+[Lista de skills conhecidas para referência]
+${knownSkills}
+
+[REGRAS DE EXTRAÇÃO]
+1. required_skills: Liste TODAS as competências, habilidades e experiências que a vaga descreve como necessárias ou obrigatórias. Inclua: metodologias (discovery, delivery, pesquisa, entrevistas, mapeamento de jornadas), soft skills (comunicação, autonomia, colaboração), contextos (B2B, SaaS, sistemas financeiros, fluxos complexos) e qualquer outra habilidade explicitamente exigida. Mínimo de 8 itens.
+2. nice_to_have_skills: Liste competências descritas como diferenciais, desejáveis ou "será um diferencial". Mínimo de 3 itens se existirem.
+3. tools: Liste APENAS ferramentas e softwares mencionados (ex: Figma, Amplitude, Mixpanel, Jira, Miro). Só ferramentas concretas.
+4. ats_keywords: Liste as palavras-chave mais importantes para ATS — termos que aparecem com destaque ou repetição na vaga.
+5. responsibilities: Liste as principais responsabilidades do cargo.
+6. Extraia job_title, company, seniority (junior/mid/senior/lead), location, experience_years_min.
+
+[FORMATO JSON — responda APENAS com este JSON, sem texto adicional]
+{
+  "job_title": "${job_title || ''}",
+  "company": "${empresa_nome || ''}",
+  "seniority": "",
+  "experience_years_min": null,
+  "location": "",
+  "required_skills": [],
+  "nice_to_have_skills": [],
+  "tools": [],
+  "ats_keywords": [],
+  "responsibilities": []
+}`;
 }
 
 // Extrair vaga com Ollama e salvar
@@ -872,6 +1089,49 @@ ${requisitosText}
     res.status(500).json({ error: e.message });
   }
 });
+
+// Extração assíncrona — insere a vaga e processa em background
+// O frontend fecha o modal imediatamente e acompanha via GET /api/jobs/processing
+app.post('/api/extract/async', async (req, res) => {
+  try {
+    const { empresa_nome, empresa_context, requisitos, job_text, applied_date, job_title } = req.body;
+    const requisitosText = requisitos || job_text || '';
+    if (!requisitosText) return res.status(400).json({ error: 'Campo requisitos é obrigatório' });
+    // Evitar duplicata: mesma empresa+título já processada ou em andamento
+    let jobId;
+    if (empresa_nome && job_title) {
+      const dup = db.prepare("SELECT id, status, matching_score FROM vagas WHERE company = ? AND job_title = ? AND (status = 'processing' OR status = 'triagem')").get(empresa_nome, job_title);
+      if (dup) {
+        if (dup.status === 'processing') {
+          return res.status(409).json({ error: 'Essa vaga já está sendo processada', id: dup.id });
+        }
+        if (dup.matching_score !== null) {
+          return res.status(409).json({ error: 'Essa vaga já foi processada e está na coluna Triagem', id: dup.id });
+        }
+        // triagem sem matching = import pendente → reutiliza o registro existente
+        jobId = dup.id;
+        db.prepare("UPDATE vagas SET status = 'processing', empresa_context = ?, requisitos = ?, job_text = ?, matching_score = NULL, applied_date = ? WHERE id = ?")
+          .run(empresa_context || null, requisitosText, requisitosText, applied_date || null, jobId);
+      }
+    }
+    if (!jobId) {
+      const result = db.prepare(`INSERT INTO vagas
+        (job_title, company, status, applied_date, empresa_context, requisitos, job_text)
+        VALUES (?, ?, 'processing', ?, ?, ?, ?)`).run(
+        job_title || null, empresa_nome || null, applied_date || null,
+        empresa_context || null, requisitosText, requisitosText
+      );
+      jobId = result.lastInsertRowid;
+    }
+    res.json({ success: true, id: jobId });
+    processingStatus.set(jobId, { status: 'queued' });
+    processingQueue.push({ jobId, body: req.body });
+    processNextInQueue();
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 
 // Error handler global — sempre retorna JSON
 app.use((err, req, res, next) => {

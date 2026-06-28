@@ -7,8 +7,8 @@
     "research": {
       "skills": [
         "UX Research",
-        "entrevistas com usuários",
-        "testes de usabilidade",
+        "Entrevistas com Usuários",
+        "Testes de Usabilidade",
         "Product Discovery",
         "Interaction Design"
       ],
@@ -16,12 +16,12 @@
     },
     "interaction_design": {
       "skills": [
-        "user flows",
-        "wireframes",
-        "prototipação de alta fidelidade",
-        "Prototyping",
-        "especificações",
-        "documentação de soluções"
+        "User Flows",
+        "Wireframes",
+        "Prototipagem de Alta Fidelidade",
+        "Prototipagem",
+        "Especificações de Design",
+        "Documentação de Design"
       ],
       "evidence": "Estruturei 2 fluxos completos de produto do zero — Comprovação Fiscal Analítica e Sensoriamento Remoto — e documentei user flows e decisões de design de forma clara para times de negócio e engenharia."
     },
@@ -29,34 +29,34 @@
       "skills": [
         "Figma",
         "Design Systems",
-        "consistência visual",
+        "Consistência Visual",
         "UI Design",
-        "handoff"
+        "Design Handoff"
       ],
       "evidence": "Projetei mais de 50 novas telas no Figma para módulos críticos do produto e contribuí para a evolução do design system, garantindo consistência entre módulos."
     },
     "tools": {
       "skills": [
-        "IA no Design"
+        "IA aplicada ao Design"
       ],
       "evidence": "Integrei ferramentas de IA ao processo de design (ideação, pesquisa, variações) e atuei em sprints ágeis com times multidisciplinares."
     },
     "soft_skills": {
       "skills": [
-        "colaboração com Produto e Engenharia",
-        "comunicação",
-        "autonomia",
-        "colaboração multidisciplinar",
-        "tomada de decisão",
-        "metodologias ágeis"
+        "Colaboração com Produto e Engenharia",
+        "Comunicação",
+        "Autonomia",
+        "Colaboração Multidisciplinar",
+        "Tomada de Decisão",
+        "Metodologias Ágeis"
       ],
       "evidence": "Colaborei diretamente com PMs, desenvolvedores e QA em sprints ágeis, garantindo alinhamento entre requisitos de negócio, viabilidade técnica e experiência do usuário."
     },
     "business": {
       "skills": [
         "B2B SaaS",
-        "segmento financeiro",
-        "estratégia"
+        "Segmento Financeiro",
+        "Estratégia de Produto"
       ],
       "evidence": "Contribuí para a conquista de 5 novos clientes no setor financeiro (Santander, Banco do Brasil) e crescimento de 10x na volumetria processada."
     }

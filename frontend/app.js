@@ -4,8 +4,12 @@ const COL_LABELS = { triagem: 'Triagem', favoritas: 'Favoritas', aplicadas: 'Apl
 
 let jobs = [];
 let searchQuery = '';
-let _cvGenerating = false;
+let _generatingJobs = new Set();
 let _pendingCVJobId = null;
+let _processingJobs = new Set();
+let _processingStatuses = {}; // id → status string from polling
+let _processingPollInterval = null;
+let sortOrders = { triagem: 'desc', aplicadas: 'desc', favoritas: 'desc', entrevista: 'desc', finalizada: 'desc' };
 
 async function loadJobs() {
   const r = await fetch(`${API}/api/jobs`);
@@ -15,10 +19,19 @@ async function loadJobs() {
 
 function renderKanban() {
   const board = document.getElementById('kanban');
+  // Save scroll positions before clearing
+  const scrollPos = {};
+  document.querySelectorAll('.kanban-col').forEach(col => {
+    const body = col.querySelector('.kanban-col-body');
+    if (body) scrollPos[col.dataset.col] = body.scrollTop;
+  });
   board.innerHTML = '';
   const q = searchQuery.toLowerCase();
   for (const col of COLUMNS) {
-    let colJobs = jobs.filter(j => (j.status || 'triagem') === col);
+    let colJobs = jobs.filter(j => {
+      const displayStatus = j.status === 'processing' ? 'triagem' : (j.status || 'triagem');
+      return displayStatus === col;
+    });
     if (q) colJobs = colJobs.filter(j =>
       (j.job_title || '').toLowerCase().includes(q) ||
       (j.company || '').toLowerCase().includes(q) ||
@@ -26,6 +39,13 @@ function renderKanban() {
       (j.location || '').toLowerCase().includes(q) ||
       (j.required_skills || []).some(s => s.toLowerCase().includes(q))
     );
+    // Sort by applied_date
+    const order = sortOrders[col] || 'desc';
+    colJobs.sort((a, b) => {
+      const da = a.applied_date ? new Date(a.applied_date).getTime() : 0;
+      const db = b.applied_date ? new Date(b.applied_date).getTime() : 0;
+      return order === 'desc' ? db - da : da - db;
+    });
     const section = document.createElement('div');
     section.className = 'kanban-col';
     section.dataset.col = col;
@@ -34,6 +54,11 @@ function renderKanban() {
         <span class="col-dot"></span>
         <h2>${COL_LABELS[col]}</h2>
         <span class="col-count">${colJobs.length}</span>
+        <button class="col-sort" data-col="${col}" title="Ordenar por data" onclick="toggleSort('${col}')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform:${order === 'desc' ? 'rotate(180deg)' : 'rotate(0deg)'}">
+            <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
+          </svg>
+        </button>
       </div>
       <div class="kanban-col-body">
         ${colJobs.length === 0 ? '<div class="empty-state">Arraste uma vaga para esta etapa</div>' : colJobs.map(j => cardHTML(j)).join('')}
@@ -67,6 +92,20 @@ function renderKanban() {
   if (elEntrevistas) elEntrevistas.textContent = entrevistas;
   if (elFinalizadas) elFinalizadas.textContent = finalizadas;
   if (elMatch) elMatch.textContent = matchMedio;
+
+  // Restore scroll positions
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.kanban-col').forEach(col => {
+      const body = col.querySelector('.kanban-col-body');
+      const saved = scrollPos[col.dataset.col];
+      if (body && saved != null) body.scrollTop = saved;
+    });
+  });
+}
+
+function toggleSort(col) {
+  sortOrders[col] = sortOrders[col] === 'desc' ? 'asc' : 'desc';
+  renderKanban();
 }
 
 function formatDateBR(dateStr) {
@@ -103,10 +142,13 @@ function cardHTML(j) {
   let sourceTag = '';
   if (j.job_source === 'linkedin') sourceTag = '<span class="card-time-tag">LinkedIn</span>';
   else if (j.job_source === 'glassdoor') sourceTag = '<span class="card-time-tag">Glassdoor</span>';
-  const cvPending = _pendingCVJobId === j.id || (_cvGenerating && j.adjusted_score == null);
+  const cvPending = _pendingCVJobId === j.id || _generatingJobs.has(j.id);
+  const isProcessing = _processingJobs.has(j.id) || j.status === 'processing';
+  const procStatus = _processingStatuses[j.id] || (j.status === 'processing' ? 'extracting' : 'queued');
+  const statusLabel = procStatus === 'extracting' ? 'Extraindo...' : procStatus === 'generating_cv' ? 'Gerando CV...' : 'Na fila';
   return `
-    <div class="card" draggable="true" data-id="${j.id}" onclick="openDetail(${j.id})">
-      <button class="card-delete" onclick="event.stopPropagation();confirmDelete(${j.id})" title="Excluir">
+    <div class="card" draggable="${isProcessing ? 'false' : 'true'}" data-id="${j.id}" onclick="${isProcessing ? 'event.stopPropagation()' : 'openDetail(' + j.id + ')'}">
+      <button class="card-delete" onclick="event.stopPropagation();confirmDelete(${j.id})" title="Excluir" ${isProcessing ? 'disabled' : ''}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
       </button>
       <div class="card-inner">
@@ -119,9 +161,14 @@ function cardHTML(j) {
             ${importTag}
             ${timeTag}
             ${cvPending ? '<span class="card-cv-loading"><span class="spinner spinner--xs"></span> Gerando CV...</span>' : ''}
+            ${isProcessing ? '<span class="card-cv-loading"><span class="spinner spinner--xs"></span> ' + statusLabel + '</span>' : ''}
           </div>
         </div>
-        ${score !== null ? `
+        ${isProcessing ? `
+        <div class="card-score">
+          <span class="card-score-label">STATUS</span>
+          <span class="card-score-value" style="font-size:12px;color:var(--color-warning)">${statusLabel}</span>
+        </div>` : score !== null ? `
         <div class="card-score">
           <span class="card-score-label">MATCH</span>
           <span class="card-score-value">${score}%</span>
@@ -293,54 +340,55 @@ document.getElementById('requisitosVaga').addEventListener('input', e => {
 });
 
 document.getElementById('btnProcessar').addEventListener('click', async () => {
+  const btn = document.getElementById('btnProcessar');
+  if (btn.disabled) return;
+  btn.disabled = true;
   const empresa = document.getElementById('empresaContext').value.trim();
   const empresaNome = document.getElementById('empresaNome').value.trim();
   const jobTitle = document.getElementById('jobTitleInput').value.trim();
   const requisitos = document.getElementById('requisitosVaga').value.trim();
-  const statusEl = document.getElementById('extractStatus');
-  const btn = document.getElementById('btnProcessar');
   const today = new Date();
   const appliedDate = today.getFullYear() + '-' +
     String(today.getMonth()+1).padStart(2,'0') + '-' +
     String(today.getDate()).padStart(2,'0');
-  btn.disabled = true; statusEl.className = 'modal-status loading';
-  statusEl.innerHTML = '<span class="spinner"></span> Processando com Ollama...';
+  const body = { empresa_context: empresa, empresa_nome: empresaNome, requisitos, applied_date: appliedDate };
+  if (jobTitle) body.job_title = jobTitle;
+
+  // Checa duplicata no frontend antes de enviar
+  const dup = jobs.find(j =>
+    j.status === 'processing' &&
+    j.company && empresaNome &&
+    j.company.toLowerCase() === empresaNome.toLowerCase() &&
+    j.job_title && jobTitle &&
+    j.job_title.toLowerCase() === jobTitle.toLowerCase()
+  );
+  if (dup) {
+    showToast(`Essa vaga já está sendo processada (ID ${dup.id})`);
+    btn.disabled = false;
+    return;
+  }
+
+  // Fecha o modal imediatamente
+  document.getElementById('modalNovaVaga').classList.add('hidden');
+  _triagemJobId = null;
   try {
-    const body = { empresa_context: empresa, empresa_nome: empresaNome, requisitos, applied_date: appliedDate };
-    if (jobTitle) body.job_title = jobTitle;
-    if (_triagemJobId) body.job_id = _triagemJobId;
-    const r = await fetch(`${API}/api/extract`, {
+    const r = await fetch(`${API}/api/extract/async`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
     const result = await r.json();
     if (result.success) {
-      statusEl.className = 'modal-status success';
-      statusEl.textContent = `✅ ${result.data.job_title || 'Vaga'} — ${empresaNome || result.data.company || 'sem empresa'} salva! Gerando CV...`;
-      document.getElementById('modalNovaVaga').classList.add('hidden');
-      _triagemJobId = null;
+      _processingJobs.add(result.id);
+      _processingStatuses[result.id] = 'queued';
+      startProcessingPolling();
       loadJobs();
-      _pendingCVJobId = result.id;
-      showToast('Gerando CV automaticamente...');
-      setTimeout(async () => {
-        try {
-          await generateCV(result.id, true);
-          loadJobs();
-          showToast('CV gerado com sucesso!');
-        } catch {
-          loadJobs();
-        }
-      }, 500);
+      showToast(`Vaga enviada para processamento (fila: ${_processingJobs.size})`);
     } else {
-      statusEl.className = 'modal-status error';
-      statusEl.textContent = `❌ ${result.error}`;
+      showError('Erro ao processar', result.error || 'Tente novamente.');
     }
   } catch (e) {
-    statusEl.className = 'modal-status error';
-    statusEl.textContent = `❌ Erro de conexão: ${e.message}`;
-    showError('Erro de conexão', 'Não foi possível conectar ao servidor. Verifique se o Express está rodando.', `POST /api/extract — ${e.message}`);
+    showError('Erro de conexão', 'Não foi possível enviar a vaga.', e.message);
   }
-  btn.disabled = false;
 });
 
 document.getElementById('jobFileInput').addEventListener('change', async (e) => {
@@ -376,7 +424,7 @@ document.getElementById('jobFileInput').addEventListener('change', async (e) => 
 });
 
 async function generateCV(id, silent) {
-  _cvGenerating = true;
+  _generatingJobs.add(id);
   if (_pendingCVJobId === id) _pendingCVJobId = null;
   const btn = document.getElementById('btnGenerateCV');
   const resultDiv = document.getElementById('cvResult');
@@ -433,7 +481,7 @@ async function generateCV(id, silent) {
     if (btn) { btn.textContent = 'Gerar CV'; btn.disabled = false; }
     if (silent) throw e;
   } finally {
-    _cvGenerating = false;
+    _generatingJobs.delete(id);
   }
 }
 
@@ -461,6 +509,8 @@ async function exportPdf(id) {
 let _reviewBodyBackup = '';
 
 async function openReviewCV(id) {
+  if (_generatingJobs.has(id)) { showToast('CV já está sendo gerado...'); return; }
+  if (_processingJobs.has(id) && _processingStatuses[id] === 'generating_cv') { showToast('CV sendo gerado automaticamente pela fila de processamento...'); return; }
   try {
     const [jobResponse, cvResponse] = await Promise.all([
       fetch(`${API}/api/jobs/${id}`),
@@ -469,8 +519,19 @@ async function openReviewCV(id) {
     const jobData = await jobResponse.json();
     const cvData = await cvResponse.json();
     if (!cvData.success) {
-      showToast(cvData.error || 'Nenhum CV gerado ainda.');
-      return;
+      showToast('Gerando CV...');
+      await generateCV(id, true);
+      await loadJobs();
+      // Após gerar, tenta abrir a revisão de novo
+      const retry = await fetch(`${API}/api/jobs/${id}/cv-cache`);
+      const retryData = await retry.json();
+      if (!retryData.success) {
+        showToast('Erro ao gerar CV automaticamente. Clique em "Gerar CV" novamente.');
+        return;
+      }
+      cvData.cv = retryData.cv;
+      const retryJob = await fetch(`${API}/api/jobs/${id}`);
+      jobData.job_title = (await retryJob.json()).job_title;
     }
     const job = jobData;
     const cv = cvData.cv;
@@ -579,7 +640,7 @@ async function saveJobDetail(id) {
   const platform = platformEl?.value === '__outro__'
     ? (document.getElementById('editPlatformOutro')?.value.trim() || '')
     : (platformEl?.value.trim() || '');
-  const location = document.getElementById('editLocation')?.value.trim() || '';
+  const location = document.getElementById('editLocation')?.value || 'Não informado';
   const interview_type = document.getElementById('editInterviewType')?.value || '';
   const company = document.getElementById('editCompany')?.value.trim() || '';
   const seniority = document.getElementById('editSeniority')?.value || '';
@@ -637,7 +698,7 @@ async function openDetail(id) {
 
   const scoreColor = score === null ? '' : score >= 80 ? 'var(--color-success)' : score >= 50 ? 'var(--color-warning)' : 'var(--color-error)';
 
-  const cvPending = _pendingCVJobId === id || (_cvGenerating && job.adjusted_score == null);
+  const cvPending = _pendingCVJobId === id || _generatingJobs.has(id);
 
   const actionsEl = document.getElementById('sidePanelActions');
   const ringEl = document.getElementById('sidePanelRing');
@@ -747,14 +808,7 @@ async function openDetail(id) {
         </div>
         <div class="info-card-content">
           <span class="info-card-label">Local</span>
-          ${job.location && job.location !== 'null'
-            ? `<span class="info-card-value" id="locationDisplay">${job.location}
-                 <button class="location-edit-btn" onclick="enableLocationEdit()" title="Editar">✏️</button>
-               </span>
-               <div id="locationSearchWrap" style="display:none">${locationSearchHTML()}</div>`
-            : `<div id="locationSearchWrap">${locationSearchHTML()}</div>
-               <span class="info-card-value" id="locationDisplay" style="display:none"></span>`
-          }
+          ${locationOptions(job.location)}
         </div>
       </div>
 
@@ -1162,59 +1216,21 @@ function savePlatformOther(input) {
   input.style.display = 'none';
 }
 
-// ── Busca de cidade ────────────────────────────────────
-function locationSearchHTML() {
-  return `
-    <input type="text" class="detail-input info-card-input" id="editLocation"
-      placeholder="Cidade, Estado ou Remoto..." autocomplete="off"
-      oninput="searchCities(this.value)">
-    <ul class="city-suggestions" id="citySuggestions"></ul>
-  `;
+function normalizeLocation(loc) {
+  if (!loc || loc === 'null') return 'Não informado';
+  const l = loc.toLowerCase().trim();
+  if (l.includes('remot') || l === 'remote' || l.includes('home office') || l.includes('homeoffice')) return 'Remoto';
+  if (l.includes('hibrid') || l.includes('hybrid') || l.includes('híbrido')) return 'Híbrido';
+  if (l.includes('presencial') || l.includes('on-site') || l.includes('onsite') || l.includes('office') || l.includes('escritório')) return 'Presencial';
+  if (l.includes('não informado') || l.includes('nao informado') || l.includes('indefinido')) return 'Não informado';
+  return 'Presencial';
 }
 
-function enableLocationEdit() {
-  document.getElementById('locationDisplay').style.display = 'none';
-  document.getElementById('locationSearchWrap').style.display = 'block';
-  document.getElementById('editLocation')?.focus();
-}
-
-let citySearchTimeout = null;
-async function searchCities(query) {
-  const list = document.getElementById('citySuggestions');
-  if (!list) return;
-  clearTimeout(citySearchTimeout);
-  if (query.length < 2) { list.innerHTML = ''; list.style.display = 'none'; return; }
-  citySearchTimeout = setTimeout(async () => {
-    try {
-      let html = '';
-      const q = query.toLowerCase();
-      if (q === 'remoto' || q === 'home office' || q === 'homeoffice') {
-        html += '<li class="city-option" onclick="selectCity(\'Remoto\')">🌍 Remoto</li>';
-      }
-      const r = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&countrycodes=br&featureType=city&format=json&limit=5`,
-        { headers: { 'Accept-Language': 'pt-BR' } }
-      );
-      const data = await r.json();
-      html += data.map(d => {
-        const parts = d.display_name.split(',');
-        const city = parts[0].trim();
-        const state = parts.find(p => p.trim().length === 2)?.trim() || parts[1]?.trim() || '';
-        const label = state ? `${city}, ${state}` : city;
-        return `<li class="city-option" onclick="selectCity('${label.replace(/'/g, "\\'")}')">🏙️ ${label}</li>`;
-      }).join('');
-      if (!html) { list.innerHTML = '<li class="city-no-result">Nenhuma cidade encontrada</li>'; list.style.display = 'block'; return; }
-      list.innerHTML = html;
-      list.style.display = 'block';
-    } catch { list.innerHTML = ''; list.style.display = 'none'; }
-  }, 500);
-}
-
-function selectCity(label) {
-  const input = document.getElementById('editLocation');
-  const list = document.getElementById('citySuggestions');
-  if (input) input.value = label;
-  if (list) { list.innerHTML = ''; list.style.display = 'none'; }
+function locationOptions(val) {
+  const opts = ['Não informado', 'Remoto', 'Híbrido', 'Presencial'];
+  return `<select class="detail-input info-card-select" id="editLocation">
+    ${opts.map(o => `<option value="${o}"${normalizeLocation(val) === o ? ' selected' : ''}>${o}</option>`).join('')}
+  </select>`;
 }
 
 // ── Bloqueio de salvar durante geração ────────────────
@@ -1303,5 +1319,62 @@ document.getElementById('btnClearSearch')?.addEventListener('click', () => {
   input.focus();
 });
 
+// ── Polling da fila de processamento ─────────────────────────────────────
+function startProcessingPolling() {
+  if (_processingPollInterval) return;
+  _processingPollInterval = setInterval(pollProcessing, 3000);
+  pollProcessing();
+}
+
+async function pollProcessing() {
+  if (_processingJobs.size === 0) {
+    if (_processingPollInterval) {
+      clearInterval(_processingPollInterval);
+      _processingPollInterval = null;
+    }
+    return;
+  }
+  try {
+    const r = await fetch(`${API}/api/jobs/processing`);
+    const data = await r.json();
+    const statuses = data.statuses || {};
+    const queued = data.queued || [];
+    const processing = data.processing || [];
+    let changed = false;
+    for (const id of _processingJobs) {
+      const st = statuses[id];
+      const isAlive = queued.includes(id) || processing.includes(id);
+      if (st && (st.status === 'complete' || st.status === 'error')) {
+        _processingJobs.delete(id);
+        delete _processingStatuses[id];
+        changed = true;
+      } else if (!isAlive && !st) {
+        _processingJobs.delete(id);
+        delete _processingStatuses[id];
+        changed = true;
+      } else if (st) {
+        _processingStatuses[id] = st.status;
+      }
+    }
+    if (changed) loadJobs();
+  } catch {}
+}
+
+async function recoverProcessingJobs() {
+  try {
+    const r = await fetch(`${API}/api/jobs/processing`);
+    const data = await r.json();
+    const allInQueue = [...(data.queued || []), ...(data.processing || [])];
+    for (const id of allInQueue) {
+      const numId = Number(id);
+      if (!_processingJobs.has(numId)) {
+        _processingJobs.add(numId);
+        _processingStatuses[numId] = (data.statuses && data.statuses[id] && data.statuses[id].status) || 'extracting';
+      }
+    }
+    if (_processingJobs.size > 0) startProcessingPolling();
+  } catch {}
+}
+
 // Init
-loadJobs();
+loadJobs().then(() => recoverProcessingJobs());
