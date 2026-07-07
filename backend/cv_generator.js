@@ -421,7 +421,7 @@ Resultados: ${PROTECTED_RESULTADOS}
 Entregas originais:
 - Entrega de mais de 50 novas telas para evolução da plataforma e otimização da experiência do usuário.
 - Condução de 15+ entrevistas com usuários, apoiando pesquisas para novas funcionalidades e refinamento de fluxos existentes.
-- Estruturação de 2 fluxos completos de produto: Comprovação Fiscal Analítica e Sensoriamento Remoto (análise baseada em imagens de satélite).
+- Estruturação de 2 fluxos completos de produto: Comprovação Fiscal Analítica e Sensoriamento Remoto (Mapeamento de lavouras com imagens via satélite).
 - Projetei interfaces no Figma para módulos críticos do produto, reduzindo fricção em jornadas-chave.
 - Desenvolvi protótipos de alta fidelidade que antecipavam decisões e diminuíam retrabalho.
 - Condução de testes de usabilidade e pesquisas qualitativas com usuários reais.
@@ -581,7 +581,7 @@ A IA pode usar e reescrever apenas evidências como:
 
 * Estruturação de 2 fluxos completos de produto
 * Comprovação Fiscal Analítica
-* Sensoriamento Remoto
+* Sensoriamento Remoto (Mapeamento de lavouras com imagens via satélite)
 * Testes de usabilidade
 * Pesquisas qualitativas
 * Usuários reais
@@ -862,7 +862,7 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
   const protectedExperience = applyApprovedStaticExperiences(finalExperience);
   const finalSkillsOrdered = rankSkillsForJob(enrichedSkills, job).filter(s => !isBlockedTerm(s));
 
-  return {
+  const cvResult = {
     name: base.name,
     current_title: base.current_title,
     header_title: base.header_title,
@@ -873,6 +873,13 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
     education: base.education,
     languages: base.languages
   };
+
+  // Revisão ortográfica automática após gerar o CV
+  try {
+    const revisao = await revisarPortugues(cvResult);
+    cvResult.revisao_ortografica = revisao;
+  } catch {}
+  return cvResult;
 }
 
 function generateFromData(cvData, job) {
@@ -899,6 +906,80 @@ function computeHeaderTitle(cv, job) {
 
 function capitalizeSkill(s) {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function revisarPortugues(cv) {
+  const textos = [];
+
+  if (cv.summary) textos.push(cv.summary);
+
+  for (const exp of (cv.experience || [])) {
+    if (exp.description) textos.push(exp.description);
+    if (exp.resultados) textos.push(exp.resultados);
+    if (exp.highlights) textos.push(...exp.highlights);
+  }
+
+  if (cv.skills_ordered) textos.push(...cv.skills_ordered);
+
+  const textoCompleto = textos.filter(Boolean).join('\n\n');
+  if (!textoCompleto.trim()) return { errors: [], total_errors: 0 };
+
+  const prompt = `Você é um revisor de português especializado em currículos. Analise o texto abaixo e encontre APENAS erros de português: ortografia, acentuação, concordância, regência, pontuação, crase e erros gramaticais.
+
+NÃO aponte:
+- escolhas de estilo ou tom
+- palavras em inglês (são aceitas em currículos de tech/design)
+- nomes próprios, empresas, ferramentas ou marcas
+- preferências de vocabulário
+
+Para cada erro encontrado, retorne:
+- A palavra/frase original com o erro
+- A correção sugerida
+- O tipo do erro (ortografia, acentuação, concordância, regência, pontuação, crase, gramática)
+- Uma breve explicação
+
+IMPORTANTE: Se não houver nenhum erro de português, retorne um array vazio.
+
+Responda APENAS com um JSON array, sem texto adicional:
+[
+  {
+    "original": "palavra ou trecho com erro",
+    "correcao": "correção sugerida",
+    "tipo": "tipo do erro",
+    "explicacao": "breve explicação"
+  }
+]
+
+TEXTO PARA REVISÃO:
+${textoCompleto}`;
+
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify({ model: OLLAMA_MODEL, prompt, stream: false, format: 'json', options: { temperature: 0 } });
+    const req = http.request(`${OLLAMA_HOST}/api/generate`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      timeout: 120000
+    }, res => {
+      let body = '';
+      res.on('data', c => body += c);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(body);
+          const raw = parsed.response;
+          let errors;
+          try { errors = JSON.parse(raw); }
+          catch { errors = extractJson(raw); }
+          if (!Array.isArray(errors)) errors = [];
+          resolve({ errors, total_errors: errors.length });
+        } catch (e) {
+          resolve({ errors: [], total_errors: 0, error: 'Falha ao processar resposta' });
+        }
+      });
+    });
+    req.on('error', () => resolve({ errors: [], total_errors: 0 }));
+    req.on('timeout', () => { req.destroy(); resolve({ errors: [], total_errors: 0 }); });
+    req.write(data);
+    req.end();
+  });
 }
 
 function generateHTML(cv, ollamaResult = {}) {
@@ -1069,4 +1150,4 @@ ${style}
   return outPath;
 }
 
-module.exports = { generateForJob, generateFromData, generateHTML, generateExternalHTML, computeHeaderTitle };
+module.exports = { generateForJob, generateFromData, generateHTML, generateExternalHTML, computeHeaderTitle, revisarPortugues };

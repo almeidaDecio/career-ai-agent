@@ -256,10 +256,10 @@ let _triagemJobId = null; // null = modo Nova Vaga normal; número = completando
 // reaproveitada pelos botões de cada fonte, já que a lógica de
 // loading/erro/sucesso é idêntica, só muda a fonte e o texto exibido.
 async function importarVagas(source, btnId, nomeAmigavel) {
-  const btn = document.getElementById(btnId);
-  btn.disabled = true;
-  const originalHTML = btn.innerHTML;
-  btn.innerHTML = `<span class="spinner spinner--sm"></span> Buscando no ${nomeAmigavel}...`;
+  const overlay = document.getElementById('modalLoading');
+  const statusEl = document.getElementById('modalLoadingStatus');
+  overlay.classList.remove('hidden');
+  statusEl.innerHTML = `<span class="spinner"></span> Buscando no ${nomeAmigavel}...`;
   try {
     const r = await fetch(`${API}/api/jobs/import-batch/${source}`, { method: 'POST' });
     const result = await r.json();
@@ -274,8 +274,7 @@ async function importarVagas(source, btnId, nomeAmigavel) {
   } catch (e) {
     showError('Erro de conexão', 'Não foi possível conectar ao servidor.', `POST /api/jobs/import-batch/${source} — ${e.message}`);
   }
-  btn.disabled = false;
-  btn.innerHTML = originalHTML;
+  overlay.classList.add('hidden');
 }
 
 document.getElementById('btnImportarLinkedIn').addEventListener('click', () => {
@@ -284,6 +283,10 @@ document.getElementById('btnImportarLinkedIn').addEventListener('click', () => {
 
 document.getElementById('btnImportarGlassdoor').addEventListener('click', () => {
   importarVagas('glassdoor', 'btnImportarGlassdoor', 'Glassdoor');
+});
+
+document.getElementById('btnImportarLinkedInEmail').addEventListener('click', () => {
+  importarVagas('linkedin_email', 'btnImportarLinkedInEmail', 'LinkedIn e-mail');
 });
 
 function openTriagemModal(job) {
@@ -316,6 +319,20 @@ document.getElementById('btnCopyLinkedinUrl').addEventListener('click', () => {
     setTimeout(() => { btn.textContent = original; }, 1500);
   });
 });
+
+function copyJobText(btn, jobId) {
+  const job = jobs.find(j => j.id == jobId);
+  if (!job) return;
+  let text = '';
+  if (job.empresa_context) text += job.empresa_context + '\n\n';
+  text += (job.requisitos || job.job_text || '');
+  if (!text.trim()) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const original = btn.innerHTML;
+    btn.innerHTML = 'copiado <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="20 6 9 17 4 12"/></svg>';
+    setTimeout(() => { btn.innerHTML = original; }, 1500);
+  });
+}
 
 // Nova Vaga
 document.getElementById('btnNovaVaga').addEventListener('click', () => {
@@ -644,6 +661,7 @@ async function saveJobDetail(id) {
   const interview_type = document.getElementById('editInterviewType')?.value || '';
   const company = document.getElementById('editCompany')?.value.trim() || '';
   const seniority = document.getElementById('editSeniority')?.value || '';
+  const linkedinUrl = document.getElementById('editJobUrl')?.value.trim() || '';
   try {
     const r = await fetch(`${API}/api/jobs/${id}/details`, {
       method: 'POST',
@@ -654,7 +672,8 @@ async function saveJobDetail(id) {
         location: location || null,
         interview_type: interview_type || null,
         company: company || null,
-        seniority: seniority || null
+        seniority: seniority || null,
+        linkedin_url: linkedinUrl || null
       })
     });
     const result = await r.json();
@@ -717,6 +736,7 @@ async function openDetail(id) {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
         ${cvPending ? 'Gerando...' : 'Gerar Novo CV'}
       </button>
+
     `;
   }
 
@@ -951,6 +971,10 @@ async function openDetail(id) {
             <svg class="collapse-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
           <div class="info-card-collapse-body" style="flex-direction:column;gap:6px;white-space:pre-wrap;font-size:13px;line-height:1.6;padding:0;height:auto">
+            <div style="display:flex;align-items:center;gap:80px;margin-bottom:8px;white-space:nowrap">
+              <input type="url" id="editJobUrl" value="${escapeHtml(job.linkedin_url || '')}" placeholder="URL da vaga" onclick="event.stopPropagation()" style="width:400px;height:28px;border:1px solid var(--color-border-default);border-radius:4px;background:var(--color-surface-primary);color:var(--color-text-primary);font-size:13px;outline:none;padding:0 8px;box-sizing:border-box">
+              <button type="button" onclick="event.stopPropagation();copyJobText(this, ${job.id})" style="border:none;background:none;color:var(--color-text-link);cursor:pointer;font-size:13px;padding:0;flex-shrink:0;display:inline-flex;align-items:center;gap:4px">Copiar texto da vaga</button>
+            </div>
             ${job.empresa_context ? `
             <div style="margin-bottom:12px"><strong style="font-size:12px;color:var(--color-text-primary)">Sobre a Empresa</strong>
 ${escapeHtml(job.empresa_context)}</div>

@@ -45,6 +45,7 @@ const server = http.createServer((req, res) => {
   }
 });
 
-server.listen(3001, '127.0.0.1', () => {
-  console.log('Servidor rodando em http://127.0.0.1:3001');
+const PORT = process.env.PORT || 3002;
+server.listen(PORT, '127.0.0.1', () => {
+  console.log(`Servidor rodando em http://127.0.0.1:${PORT}`);
 });

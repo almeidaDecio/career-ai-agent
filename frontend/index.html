@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AjustaCV</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
   <link rel="stylesheet" href="ds/tokens.css">
   <link rel="stylesheet" href="ds/base.css">
   <link rel="stylesheet" href="ds/components.css">
@@ -11,25 +12,61 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <div class="logo">
-      <div class="logo-icon">✦</div>
+  <header class="dashboard-header">
+    <div class="brand">
+      <div class="brand__mark">+</div>
       <div>
-        <h1><span style="font-weight:400">Ajusta</span><strong>CV</strong></h1>
-        <p class="logo-subtitle">Gerencie suas candidaturas</p>
+        <div class="brand__name">AjustaCV</div>
+        <div class="brand__subtitle">Gerencie suas candidaturas</div>
       </div>
     </div>
-    <div class="header-actions">
-      <div class="search-wrap">
-        <input type="text" class="search-input" id="searchInput" placeholder="Buscar vagas...">
+
+    <div class="header__actions">
+      <div class="input input--search">
+        <i class="ti ti-search input__icon" aria-hidden="true"></i>
+        <input type="text" class="input__field" id="searchInput" placeholder="Buscar vagas..." autocomplete="off">
         <button class="search-clear hidden" id="btnClearSearch" title="Limpar busca">&times;</button>
       </div>
-      <button class="btn btn--secondary" id="btnImportarCV">Importar CV</button>
-      <button class="btn btn--secondary" id="btnImportarLinkedIn">Importar do LinkedIn</button>
-      <button class="btn btn--secondary" id="btnImportarGlassdoor">Importar do Glassdoor</button>
-      <button class="btn btn--primary" id="btnNovaVaga">Nova Vaga</button>
+
+      <div class="dropdown" data-dropdown>
+        <button type="button" class="btn btn--secondary dropdown__trigger" data-dropdown-trigger aria-haspopup="true" aria-expanded="false" aria-controls="import-menu">
+          <i class="ti ti-download" aria-hidden="true"></i>
+          Importar
+          <i class="ti ti-chevron-down dropdown__chevron" aria-hidden="true"></i>
+        </button>
+        <div class="dropdown__menu" id="import-menu" role="menu" data-dropdown-menu>
+          <button type="button" class="dropdown__item" role="menuitem" data-action="import-cv">
+            <i class="ti ti-file-text" aria-hidden="true"></i>
+            Importar CV Externo
+          </button>
+          <button type="button" class="dropdown__item" role="menuitem" data-action="import-linkedin">
+            <i class="ti ti-brand-linkedin" aria-hidden="true"></i>
+            Importar do LinkedIn
+          </button>
+          <button type="button" class="dropdown__item" role="menuitem" data-action="import-glassdoor">
+            <i class="ti ti-briefcase" aria-hidden="true"></i>
+            Importar do Glassdoor
+          </button>
+          <button type="button" class="dropdown__item" role="menuitem" data-action="import-linkedin-email">
+            <i class="ti ti-mail" aria-hidden="true"></i>
+            Importar e-mail LinkedIn
+          </button>
+        </div>
+      </div>
+
+      <button type="button" class="btn btn--primary" data-action="nova-vaga">
+        <i class="ti ti-plus" aria-hidden="true"></i>
+        Nova vaga
+      </button>
     </div>
   </header>
+
+  <!-- Botões legados mantidos ocultos para compatibilidade com app.js -->
+  <button class="hidden" id="btnImportarCV"></button>
+  <button class="hidden" id="btnImportarLinkedIn"></button>
+  <button class="hidden" id="btnImportarGlassdoor"></button>
+  <button class="hidden" id="btnImportarLinkedInEmail"></button>
+  <button class="hidden" id="btnNovaVaga"></button>
 
   <div class="stats-bar" id="statsBar">
     <div class="stats-item">
@@ -160,6 +197,15 @@
     </div>
   </div>
 
+  <!-- Modal Loading (importação em andamento) -->
+  <div class="modal-overlay hidden" id="modalLoading">
+    <div class="modal dialog" style="max-width:360px;text-align:center">
+      <div class="modal-body dialog__body" style="padding:32px 24px">
+        <div id="modalLoadingStatus" style="font-size:14px;color:var(--color-text-primary)"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal Erro -->
   <div class="modal-overlay hidden" id="modalError">
     <div class="modal dialog" style="max-width:420px">
@@ -202,6 +248,33 @@
     <div class="side-panel-body" id="detailBody"></div>
   </div>
 
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var dropdown = document.querySelector('[data-dropdown]');
+    if (dropdown) {
+      var trigger = dropdown.querySelector('[data-dropdown-trigger]');
+      var menu = dropdown.querySelector('[data-dropdown-menu]');
+      function openMenu() { dropdown.setAttribute('data-open', 'true'); trigger.setAttribute('aria-expanded', 'true'); }
+      function closeMenu() { dropdown.setAttribute('data-open', 'false'); trigger.setAttribute('aria-expanded', 'false'); }
+      trigger.addEventListener('click', function(e) { e.stopPropagation(); var isOpen = dropdown.getAttribute('data-open') === 'true'; isOpen ? closeMenu() : openMenu(); });
+      document.addEventListener('click', function(e) { if (!dropdown.contains(e.target)) closeMenu(); });
+      document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeMenu(); });
+      menu.querySelectorAll('[data-action]').forEach(function(item) {
+        item.addEventListener('click', function() {
+          var action = item.getAttribute('data-action');
+          closeMenu();
+          if (action === 'import-cv') document.getElementById('btnImportarCV').click();
+          else if (action === 'import-linkedin') document.getElementById('btnImportarLinkedIn').click();
+          else if (action === 'import-glassdoor') document.getElementById('btnImportarGlassdoor').click();
+          else if (action === 'import-linkedin-email') document.getElementById('btnImportarLinkedInEmail').click();
+        });
+      });
+      document.querySelectorAll('[data-action="nova-vaga"]').forEach(function(btn) {
+        btn.addEventListener('click', function() { document.getElementById('btnNovaVaga').click(); });
+      });
+    }
+  });
+  </script>
   <script src="app.js?v=2"></script>
 </body>
 </html>

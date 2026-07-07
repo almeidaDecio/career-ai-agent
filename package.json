@@ -8,8 +8,8 @@
   },
   "scripts": {
     "start": "node backend/server.js",
-    "restart": "npx kill-port 3001 && node backend/server.js",
-    "dev": "npx kill-port 3001 && nodemon --watch backend --ext js backend/server.js",
+    "restart": "npx kill-port 3002 && node backend/server.js",
+    "dev": "npx kill-port 3002 && nodemon --watch backend --ext js backend/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

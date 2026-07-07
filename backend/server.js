@@ -11,7 +11,7 @@ const skillExpander = require('./skill_expander');
 const multer = require('multer');
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3002;
 const OLLAMA_HOST = 'http://127.0.0.1:11434';
 const OLLAMA_MODEL = 'llama3.2:3b';
 const db = new Database(path.join(__dirname, '..', 'career_agent.db'));
@@ -72,6 +72,7 @@ app.get('/api/jobs/:id', (req, res) => {
 // Caminhos fixos do scraper de LinkedIn (dentro da pasta do projeto)
 const LINKEDIN_JOBS_DIR = path.join(__dirname, '..', 'linkedin-jobs');
 const GLASSDOOR_JOBS_DIR = path.join(__dirname, '..', 'glassdoor-emails', 'glassdoor-jobs');
+const LINKEDIN_EMAIL_JOBS_DIR = path.join(__dirname, '..', 'linkedin-emails', 'linkedin-email-jobs');
 
 // Configuração por fonte de importação. Cada fonte tem seu próprio
 // script, pasta de saída, controle de execuções diárias e limite —
@@ -93,6 +94,15 @@ const IMPORT_SOURCES = {
     runsPath: path.join(GLASSDOOR_JOBS_DIR, 'execucoes.json'),
     maxRunsPerDay: 4, // lê e-mail, não bate direto no site — limite mais folgado
     envVar: 'GLASSDOOR_OUTPUT_DIR',
+    timeoutMs: 3 * 60 * 1000 // 3 min (Gmail API é mais rápida que scraping)
+  },
+  linkedin_email: {
+    jobsDir: LINKEDIN_EMAIL_JOBS_DIR,
+    jobsPath: path.join(LINKEDIN_EMAIL_JOBS_DIR, 'jobs_new.json'),
+    scriptPath: path.join(path.dirname(LINKEDIN_EMAIL_JOBS_DIR), 'linkedin_email_reader.py'),
+    runsPath: path.join(LINKEDIN_EMAIL_JOBS_DIR, 'execucoes.json'),
+    maxRunsPerDay: 4, // lê e-mail, não bate direto no site — limite mais folgado
+    envVar: 'LINKEDIN_EMAIL_OUTPUT_DIR',
     timeoutMs: 3 * 60 * 1000 // 3 min (Gmail API é mais rápida que scraping)
   }
 };
@@ -270,8 +280,9 @@ app.post('/api/jobs/:id/details', (req, res) => {
     const location = req.body.location || null;
     const company = req.body.company || null;
     const seniority = req.body.seniority || null;
-    db.prepare('UPDATE vagas SET applied_date = ?, platform = ?, interview_type = ?, location = ?, company = ?, seniority = ? WHERE id = ?')
-      .run(applied_date, platform, interview_type, location, company, seniority, req.params.id);
+    const linkedin_url = req.body.linkedin_url || null;
+    db.prepare('UPDATE vagas SET applied_date = ?, platform = ?, interview_type = ?, location = ?, company = ?, seniority = ?, linkedin_url = ? WHERE id = ?')
+      .run(applied_date, platform, interview_type, location, company, seniority, linkedin_url, req.params.id);
 
     // Recalcular matching e adjusted_score
     const row = db.prepare('SELECT * FROM vagas WHERE id = ?').get(req.params.id);
@@ -731,6 +742,21 @@ app.post('/api/jobs/:id/export-pdf', async (req, res) => {
     res.json({ success: true, url: '/cv_otimizado.html?print=true' });
   } catch (e) {
     console.error('export-pdf error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Revisar português do CV gerado
+app.post('/api/jobs/:id/revisar-portugues', async (req, res) => {
+  try {
+    const cachePath = path.join(__dirname, '..', 'data', `cv_cache_${req.params.id}.json`);
+    if (!fs.existsSync(cachePath)) {
+      return res.status(400).json({ error: 'Gere o CV otimizado primeiro (botão "Gerar CV Otimizado")' });
+    }
+    const cv = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+    const revisao = await cvGenerator.revisarPortugues(cv);
+    res.json({ success: true, ...revisao });
+  } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
