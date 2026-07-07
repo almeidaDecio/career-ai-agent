@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Décio D'Almeida — Product Designer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #1c1c1c;
+    --ink-mid: #444;
+    --ink-light: #888;
+    --rule: #d8d4ce;
+    --accent: #1e3a5f;
+    --page: #ffffff;
+  }
+
+  @media print {
+    @page {
+      size: A4;
+      margin: 12mm 15mm;
+    }
+    html, body {
+      background: #ffffff !important;
+      color: #1c1c1c !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      width: 100% !important;
+    }
+    .page {
+      background: #ffffff !important;
+      box-shadow: none !important;
+      margin: 0 !important;
+      border: none !important;
+      max-width: 100% !important;
+      width: 100% !important;
+      padding: 0 !important;
+    }
+    .header {
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+    }
+    .section { 
+      margin-bottom: 14px; 
+    }
+    .section-title {
+      margin-bottom: 8px;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+    .summary {
+      font-size: 13px;
+      line-height: 1.65;
+    }
+    .skill-list {
+      gap: 4px;
+    }
+    .skill-tag {
+      font-size: 11px;
+      padding: 2px 8px;
+    }
+    .job { 
+      margin-bottom: 12px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .result-box {
+      padding: 5px 10px;
+      margin: 4px 0 6px;
+      font-size: 12px;
+    }
+    .bullet-list {
+      gap: 2px;
+    }
+    .bullet-list li {
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+    .rule { 
+      margin: 8px 0; 
+    }
+  }
+
+  body {
+    background: #e8e5e0;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    color: var(--ink);
+    line-height: 1.6;
+    padding: 40px 20px;
+  }
+
+  .page {
+    background: var(--page);
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 52px 64px;
+    box-shadow: 0 4px 40px rgba(0,0,0,0.10);
+  }
+
+  /* HEADER */
+  .header {
+    padding-bottom: 22px;
+    border-bottom: 2px solid var(--accent);
+    margin-bottom: 28px;
+  }
+
+  .header-name {
+    font-size: 30px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+
+  .header-title-line {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  .header-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .header-line a,
+  .header-line span {
+    font-size: 12px;
+    color: var(--ink-mid);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .header-line a:hover { color: var(--accent); }
+
+  .header-line span:not(:last-child)::after {
+    content: '·';
+    margin: 0 10px;
+    color: var(--ink-light);
+  }
+
+  /* SECTION */
+  .section { margin-bottom: 26px; }
+  .section:last-child { margin-bottom: 0; }
+
+  .section-title {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--accent);
+    padding-bottom: 6px;
+    border-bottom: 0.5px solid var(--rule);
+    margin-bottom: 14px;
+  }
+
+  /* SUMMARY */
+  .summary {
+    font-size: 13.5px;
+    font-weight: 300;
+    color: var(--ink-mid);
+    line-height: 1.75;
+  }
+
+  /* EXPERIENCE */
+  .job { margin-bottom: 22px; }
+  .job:last-child { margin-bottom: 0; }
+
+  .job-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 1px;
+  }
+
+  .job-company {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .job-period {
+    font-size: 11.5px;
+    color: var(--ink-light);
+    white-space: nowrap;
+  }
+
+  .job-role {
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .result-box {
+    background: #edf2f8;
+    border-left: 2.5px solid var(--accent);
+    padding: 7px 12px;
+    margin: 8px 0 10px;
+    font-size: 12.5px;
+    color: var(--accent);
+    line-height: 1.6;
+  }
+
+  .bullet-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .bullet-list li {
+    font-size: 13px;
+    color: var(--ink-mid);
+    padding-left: 14px;
+    text-indent: -14px;
+    line-height: 1.65;
+  }
+
+  .bullet-list li::before {
+    content: '– ';
+    color: var(--rule);
+  }
+
+  .job-skills {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--ink-light);
+    letter-spacing: 0.2px;
+  }
+
+  .job-desc {
+    font-size: 13px;
+    color: var(--ink-mid);
+    line-height: 1.7;
+  }
+
+  .rule { border: none; border-top: 0.5px solid var(--rule); margin: 18px 0; }
+
+  /* EDUCATION */
+  .edu-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 32px;
+  }
+
+  .edu-item {}
+
+  .edu-degree {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 1px;
+  }
+
+  .edu-school {
+    font-size: 12px;
+    color: var(--ink-mid);
+  }
+
+  .edu-period {
+    font-size: 11.5px;
+    color: var(--ink-light);
+  }
+
+  /* CERTS */
+  .cert-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .cert-item {
+    font-size: 13px;
+    color: var(--ink-mid);
+  }
+
+  .cert-item span {
+    font-size: 11.5px;
+    color: var(--ink-light);
+    margin-left: 6px;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-name">Décio D'Almeida</div>
+    <div class="header-title-line">Product Designer</div>
+    <div class="header-line">
+      <a href="mailto:decio.almeida.product.design@gmail.com">decio.almeida.product.design@gmail.com</a>
+      <span>+55 11 99376-3161</span>
+    </div>
+    <div class="header-line">
+      <a href="https://linkedin.com/in/décio-d-almeida-74186621">linkedin.com/in/décio-d-almeida-74186621</a>
+      <a href="https://portfolio.decio-almeida-1969.workers.dev/">Portfólio Décio</a>
+    </div>
+    <div style="font-size:11.5px;color:var(--ink-light);margin-top:8px">Porecatu – PR (Disponível para atuação Remota ou Híbrida em Maringá, Londrina e região)</div>
+  </header>
+
+  <!-- RESUMO -->
+  <section class="section">
+    <div class="section-title">Perfil Profissional</div>
+    <p class="summary">Tenho mais de 30 anos de experiência em design, com trajetória iniciada no design gráfico tradicional e evolução para produtos digitais. Desenvolvo interfaces, fluxos, protótipos e experiências orientadas à clareza operacional, usabilidade e consistência visual. Tenho experiência em produtos B2B do setor financeiro, conduzindo discovery, validação com usuários, prototipação em Figma e colaborando com times de produto, desenvolvimento e QA. Contribuo para a evolução de plataformas digitais complexas, conectando necessidades de negócio, viabilidade técnica e experiência do usuário.</p>
+  </section>
+
+  <!-- COMPETÊNCIAS -->
+  <section class="section">
+    <div class="section-title">Competências</div>
+    <p class="summary">Testes de Usabilidade | Consistência Visual | Figma | ARIA | Wireframes | Colaboração com Produto e Desenvolvimento | Entrevistas com Usuários | Prototipagem de Alta Fidelidade | Documentação de Design | Product Discovery | Design Systems | IA aplicada ao Design | Segmento Financeiro | Estratégia de Produto | Interaction Design | UI Design | Design Handoff | UX Research | User Flows | Autonomia | Metodologias Ágeis | B2B SaaS | Comunicação | Tomada de Decisão</p>
+  </section>
+
+  <!-- EXPERIÊNCIA -->
+  <section class="section">
+    <div class="section-title">Experiência Profissional</div>
+
+    <!-- SOFTFOCUS (DINÂMICO) -->
+    <div class="job">
+      <div class="job-header">
+        <div class="job-company">Softfocus</div>
+        <div class="job-period">jul/2021 – fev/2026</div>
+      </div>
+      <div class="job-role">Product Designer</div>
+      <div class="result-box">
+        O trabalho contribuiu diretamente para a conquista de 5 novos clientes, incluindo Santander e Banco do Brasil, além de viabilizar um crescimento de 10 vezes na volumetria processada pelos clientes.
+      </div>
+      <ul class="bullet-list">
+        <li>Mais de 50 novas telas entregues para evolução da plataforma no Figma</li>
+        <li>15+ entrevistas com usuários conduzidas para novas funcionalidades e refinamento de fluxos existentes</li>
+        <li>Desenvolvi protótipos de alta fidelidade no Figma para módulos críticos do produto, reduzindo fricção em jornadas-chave.</li>
+        <li>Evolui fluxos completos de produto: Comprovação Fiscal Analítica e Sensoriamento Remoto (Mapeamento de lavouras com imagens via satélite).</li>
+        <li>Colaborei com PMs, desenvolvedores e QA em sprints ágeis.</li>
+        <li>Documentei user flows e contribuo para a evolução do design system.</li>
+        <li>Integrei ferramentas de IA ao processo de design.</li>
+      </ul>
+      <div class="job-skills">Figma · Design Systems · Prototyping · UX Research · Discovery · Metodologias Ágeis · IA no Design</div>
+    </div>
+
+    <hr class="rule">
+
+    <!-- BMK (ESTÁTICO) -->
+    <div class="job">
+      <div class="job-header">
+        <div class="job-company">BMK Indústria Gráfica</div>
+        <div class="job-period">abr/2011 – set/2020</div>
+      </div>
+      <div class="job-role">Designer / Suporte TI</div>
+      <p class="job-desc">Atuação na criação e finalização de documentos de segurança (cheques e boletos), garantindo precisão técnica e conformidade em processos gráficos de alta complexidade. Interface contínua entre TI, PCP e produção para apoiar a eficiência operacional e a redução de falhas ao longo do fluxo produtivo.</p>
+      <div class="job-skills">Documentos de Segurança · Otimização de Processos · Suporte TI · Resolução de Problemas · Colaboração Multidisciplinar · Eficiência Operacional</div>
+    </div>
+
+    <hr class="rule">
+
+    <!-- EDITORA 3 (ESTÁTICO) -->
+    <div class="job">
+      <div class="job-header">
+        <div class="job-company">Editora 3 — Revista IstoÉ Dinheiro</div>
+        <div class="job-period">jul/2010 – fev/2011</div>
+      </div>
+      <div class="job-role">Designer / Diagramador / Ilustrador</div>
+      <p class="job-desc">Desenvolvimento de layouts editoriais e ilustrações para publicação semanal de circulação nacional, organizando conteúdos financeiros e econômicos com foco em clareza da informação, hierarquia visual e consistência editorial em ambiente de alta demanda.</p>
+      <div class="job-skills">Hierarquia Visual · Organização da Informação · Comunicação Visual · Design Editorial · Produção Jornalística · Clareza da Informação</div>
+    </div>
+
+    <hr class="rule">
+
+    <!-- PAPER EXPRESS (ESTÁTICO) -->
+    <div class="job">
+      <div class="job-header">
+        <div class="job-company">Paper Express</div>
+        <div class="job-period">mar/2002 – fev/2009</div>
+      </div>
+      <div class="job-role">Supervisor de Produção</div>
+      <p class="job-desc">Gestão da produção gráfica com foco em planejamento operacional, coordenação de equipes e controle de processos, garantindo qualidade técnica, cumprimento de prazos e eficiência em ambientes de alta demanda.</p>
+      <div class="job-skills">Gestão de Processos · Planejamento Operacional · Coordenação de Equipes · Controle de Prazos · Qualidade · Eficiência Operacional</div>
+    </div>
+
+  </section>
+
+  <!-- FORMAÇÃO -->
+  <section class="section">
+    <div class="section-title">Formação Acadêmica</div>
+    <div class="edu-grid">
+      <div class="edu-item">
+        <div class="edu-degree">Publicidade e Propaganda</div>
+        <div class="edu-school">UNIP — Universidade Paulista</div>
+        <div class="edu-period">1988 – 1992</div>
+      </div>
+      <div class="edu-item">
+        <div class="edu-degree">Pós-Graduação em História da Arte</div>
+        <div class="edu-school">FAAP — Fundação Armando Alvares Penteado</div>
+        <div class="edu-period">2013 – 2015</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CERTIFICAÇÕES -->
+  <section class="section">
+    <div class="section-title">Certificações</div>
+    <div class="cert-list">
+      <div class="cert-item">Design Thinking: The Ultimate Guide <span>IxDF — Interaction Design Foundation · 2023</span></div>
+      <div class="cert-item">User Experience: The Beginner's Guide <span>IxDF — Interaction Design Foundation · 2023</span></div>
+    </div>
+  </section>
+
+</div>
+<script>window.onload = function () {
+  if (window.location.search.includes('print=true')) {
+    var printed = false;
+    var doPrint = function () { if (!printed) { printed = true; window.print(); } };
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(doPrint).catch(doPrint);
+    }
+    setTimeout(doPrint, 1500); // fallback de seguranca caso fonts.ready nao resolva
+  }
+};</script>
+</body>
+</html>
